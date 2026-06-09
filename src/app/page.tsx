@@ -125,7 +125,6 @@ export default function Home() {
   const [selfie, setSelfie] = useState<File | null>(null);
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
   const [skinType, setSkinType] = useState<SkinType>("sensitive");
-  const [isMobile, setIsMobile] = useState(false);
   const [email, setEmail] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
@@ -151,21 +150,6 @@ export default function Home() {
       }
     };
   }, [previewUrl]);
-
-  useEffect(() => {
-    function updateIsMobile() {
-      const userAgent = navigator.userAgent.toLowerCase();
-      const hasMobileUserAgent = /iphone|ipad|android|mobile/.test(userAgent);
-      setIsMobile(window.innerWidth <= 760 || hasMobileUserAgent);
-    }
-
-    updateIsMobile();
-    window.addEventListener("resize", updateIsMobile);
-
-    return () => {
-      window.removeEventListener("resize", updateIsMobile);
-    };
-  }, []);
 
   function clearPaidState() {
     setRoutine(null);
@@ -356,11 +340,11 @@ export default function Home() {
     <main className={`app-shell ${diagnostic ? "has-result" : ""}`}>
       <section className="hero-panel" aria-labelledby="product-title">
         <div className="eyebrow">Analyse gratuite par selfie</div>
-        <h1 id="product-title">Skinlu</h1>
+        <h1 id="product-title">Skinlu<span>.</span></h1>
         <p className="hero-benefit">Découvre ce dont ta peau a vraiment besoin.</p>
         <p className="lead">
           Un selfie suffit. Notre IA repère tes préoccupations cutanées et te
-          construit une routine soin sur-mesure, avec des produits multi-marques.
+          construit une routine soin sur mesure, avec des produits multi-marques.
         </p>
         <div className="trust-strip" aria-label="Points cles Skinlu">
           <span>Aperçu gratuit</span>
@@ -369,9 +353,6 @@ export default function Home() {
         </div>
 
         <div className="mock-analysis" aria-label="Exemple de diagnostic Skinlu">
-          <div className="mock-face">
-            <span />
-          </div>
           <div className="mock-readout">
             <strong>Exemple d&apos;analyse</strong>
             <div>
@@ -399,43 +380,25 @@ export default function Home() {
         <form onSubmit={handleSubmit} className="upload-form">
           <div className="selfie-picker">
             {previewUrl ? (
-              <div className="drop-zone has-preview">
+              <label className="drop-zone has-preview">
+                <input
+                  type="file"
+                  name="selfie"
+                  accept="image/*"
+                  onChange={handleSelfieChange}
+                />
                 <img src={previewUrl} alt="Preview du selfie" className="photo-preview" />
-              </div>
-            ) : isMobile ? (
-              <div className="mobile-photo-actions">
-                <label className="photo-action primary">
-                  <input
-                    type="file"
-                    name="selfie_camera"
-                    accept="image/*"
-                    capture="user"
-                    onChange={handleSelfieChange}
-                  />
-                  <strong>Prendre un selfie</strong>
-                  <span>Caméra frontale</span>
-                </label>
-                <label className="photo-action">
-                  <input
-                    type="file"
-                    name="selfie_gallery"
-                    accept="image/*"
-                    onChange={handleSelfieChange}
-                  />
-                  <strong>Choisir une photo</strong>
-                  <span>Depuis la galerie</span>
-                </label>
-              </div>
+              </label>
             ) : (
               <label className="drop-zone">
                 <input
                   type="file"
                   name="selfie"
-                  accept="image/jpeg,image/png,image/webp"
+                  accept="image/*"
                   onChange={handleSelfieChange}
                 />
                 <span className="drop-zone-empty">
-                <strong>Sélectionner un selfie</strong>
+                  <strong>Ajouter une photo</strong>
                   <span>{helperText}</span>
                 </span>
               </label>
