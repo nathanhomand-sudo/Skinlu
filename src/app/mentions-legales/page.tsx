@@ -8,6 +8,8 @@ export const metadata: Metadata = {
 export default function LegalNoticePage() {
   return (
     <main className="legal-page">
+      <div className="legal-page-inner">
+      <nav className="legal-nav"><a href="/">← Retour</a></nav>
       <h1>Mentions légales</h1>
 
       <section>
@@ -57,6 +59,7 @@ export default function LegalNoticePage() {
         <h2>Contact</h2>
         <p>Email de contact à compléter avant lancement public.</p>
       </section>
+      </div>
     </main>
   );
 }

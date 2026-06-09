@@ -8,6 +8,8 @@ export const metadata: Metadata = {
 export default function PrivacyPolicyPage() {
   return (
     <main className="legal-page">
+      <div className="legal-page-inner">
+      <nav className="legal-nav"><a href="/">← Retour</a></nav>
       <h1>Politique de confidentialité</h1>
 
       <section>
@@ -80,6 +82,7 @@ export default function PrivacyPolicyPage() {
           fournit pas de diagnostic médical ou dermatologique.
         </p>
       </section>
+      </div>
     </main>
   );
 }
