@@ -372,6 +372,16 @@ export default function Home() {
         </div>
 
         <div className="hero-visual" aria-label="Aperçu Skinlu">
+          <img
+            src="/skinlu-hero-lifestyle.png"
+            alt=""
+            className="hero-lifestyle-image"
+            aria-hidden="true"
+          />
+          <div className="floating-card floating-card-left">
+            <span>Routine matin</span>
+            <strong>Cleanser · Sérum · SPF</strong>
+          </div>
           <div className="phone-frame">
             <div className="phone-topbar">
               <span>Skinlu</span>
@@ -399,6 +409,10 @@ export default function Home() {
               <span>Routine proposée</span>
               <b>Cleanser · Sérum · SPF</b>
             </div>
+          </div>
+          <div className="floating-card floating-card-right">
+            <span>Produit recommandé</span>
+            <strong>Sérum hydratant</strong>
           </div>
         </div>
       </section>
@@ -582,6 +596,35 @@ export default function Home() {
               ) : null}
             </div>
           ) : null}
+        </div>
+      </section>
+
+      <section className="result-preview-section">
+        <div className="section-heading">
+          <span className="eyebrow">Aperçu du résultat</span>
+          <h2>Une lecture claire, pas une liste incompréhensible.</h2>
+        </div>
+        <div className="result-preview-grid">
+          <article className="result-preview-main">
+            <span>Priorité détectée</span>
+            <h3>Déshydratation</h3>
+            <p>
+              Ta routine commence par réparer la barrière cutanée et retenir
+              l’eau, avant d’ajouter des actifs plus ciblés.
+            </p>
+          </article>
+          <article>
+            <span>À surveiller</span>
+            <strong>Pores visibles</strong>
+          </article>
+          <article>
+            <span>Routine</span>
+            <strong>Matin + soir</strong>
+          </article>
+          <article>
+            <span>Produits</span>
+            <strong>Multi-marques</strong>
+          </article>
         </div>
       </section>
 
