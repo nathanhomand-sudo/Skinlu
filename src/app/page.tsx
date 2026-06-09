@@ -13,7 +13,7 @@ const ANALYSIS_TIMEOUT_MS = 70_000;
 const DIAGNOSTIC_STORAGE_KEY = "skinlu:last-diagnostic";
 
 const SKIN_TYPES: { value: SkinType; label: string }[] = [
-  { value: "dry", label: "Seche" },
+  { value: "dry", label: "Sèche" },
   { value: "oily", label: "Grasse" },
   { value: "combination", label: "Mixte" },
   { value: "sensitive", label: "Sensible" },
@@ -22,10 +22,10 @@ const SKIN_TYPES: { value: SkinType; label: string }[] = [
 
 const CONCERN_LABELS: Record<Concern, string> = {
   acne: "Imperfections",
-  dehydration: "Deshydratation",
+  dehydration: "Déshydratation",
   dark_spots: "Taches",
-  aging: "Signes de l'age",
-  sensitivity: "Sensibilite",
+  aging: "Signes de l'âge",
+  sensitivity: "Sensibilité",
   dullness: "Teint terne",
   enlarged_pores: "Pores visibles",
 };
@@ -125,6 +125,7 @@ export default function Home() {
   const [selfie, setSelfie] = useState<File | null>(null);
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
   const [skinType, setSkinType] = useState<SkinType>("sensitive");
+  const [isMobile, setIsMobile] = useState(false);
   const [email, setEmail] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
@@ -137,10 +138,10 @@ export default function Home() {
 
   const helperText = useMemo(() => {
     if (!selfie) {
-      return "Selfie net, visage bien eclaire. JPG, PNG ou WebP. 4 MB max.";
+      return "Selfie net, visage bien éclairé. JPG, PNG ou WebP. 4 MB max.";
     }
 
-    return `Selfie pret - ${formatBytes(selfie.size)}`;
+    return `Selfie prêt - ${formatBytes(selfie.size)}`;
   }, [selfie]);
 
   useEffect(() => {
@@ -150,6 +151,21 @@ export default function Home() {
       }
     };
   }, [previewUrl]);
+
+  useEffect(() => {
+    function updateIsMobile() {
+      const userAgent = navigator.userAgent.toLowerCase();
+      const hasMobileUserAgent = /iphone|ipad|android|mobile/.test(userAgent);
+      setIsMobile(window.innerWidth <= 760 || hasMobileUserAgent);
+    }
+
+    updateIsMobile();
+    window.addEventListener("resize", updateIsMobile);
+
+    return () => {
+      window.removeEventListener("resize", updateIsMobile);
+    };
+  }, []);
 
   function clearPaidState() {
     setRoutine(null);
@@ -235,8 +251,8 @@ export default function Home() {
       if (!response.ok) {
         throw new Error(
           data.error === "service_timeout"
-            ? "Le diagnostic met trop de temps a repondre. Reessayez avec une photo plus nette."
-            : data.error ?? "Le diagnostic n'a pas pu demarrer.",
+            ? "Le diagnostic met trop de temps à répondre. Réessayez avec une photo plus nette."
+            : data.error ?? "Le diagnostic n'a pas pu démarrer.",
         );
       }
 
@@ -245,7 +261,7 @@ export default function Home() {
     } catch (caughtError) {
       setError(
         caughtError instanceof DOMException && caughtError.name === "AbortError"
-          ? "Le diagnostic prend trop de temps. Reessayez avec un selfie net et bien cadre."
+          ? "Le diagnostic prend trop de temps. Réessayez avec un selfie net et bien cadré."
           : caughtError instanceof Error
             ? caughtError.message
             : "Une erreur inattendue est survenue.",
@@ -310,14 +326,14 @@ export default function Home() {
         throw new Error(
           data.error === "report_locked"
             ? "Paiement en cours de validation. Rechargez dans quelques secondes."
-            : data.error ?? "Routine verrouillee.",
+            : data.error ?? "Routine verrouillée.",
         );
       }
 
       setRoutine(data as RoutineReport);
     } catch (caughtError) {
       setError(
-        caughtError instanceof Error ? caughtError.message : "Routine verrouillee.",
+        caughtError instanceof Error ? caughtError.message : "Routine verrouillée.",
       );
     } finally {
       setReportLoading(false);
@@ -339,24 +355,39 @@ export default function Home() {
   return (
     <main className={`app-shell ${diagnostic ? "has-result" : ""}`}>
       <section className="hero-panel" aria-labelledby="product-title">
-        <div className="eyebrow">Diagnostic de peau par IA</div>
+        <div className="eyebrow">Analyse gratuite par selfie</div>
         <h1 id="product-title">Skinlu</h1>
+        <p className="hero-benefit">Découvre ce dont ta peau a vraiment besoin.</p>
         <p className="lead">
-          Ajoutez un selfie, obtenez un apercu cosmetique de votre peau, puis
-          debloquez une routine de soin personnalisee avec produits multi-marques.
+          Un selfie suffit. Notre IA repère tes préoccupations cutanées et te
+          construit une routine soin sur-mesure, avec des produits multi-marques.
         </p>
-        <p className="privacy-note">
-          Votre selfie sert a generer l&apos;analyse et n&apos;est pas conserve comme
-          fichier par Skinlu.
-        </p>
-        <p className="disclaimer-note">
-          Analyse cosmetique informative. Skinlu ne fournit pas de diagnostic
-          medical ou dermatologique.
-        </p>
-        <nav className="legal-links" aria-label="Liens legaux">
-          <a href="/mentions-legales">Mentions legales</a>
-          <a href="/politique-de-confidentialite">Politique de confidentialite</a>
-        </nav>
+        <div className="trust-strip" aria-label="Points cles Skinlu">
+          <span>Aperçu gratuit</span>
+          <span>Routine AM/PM</span>
+          <span>Produits FR</span>
+        </div>
+
+        <div className="mock-analysis" aria-label="Exemple de diagnostic Skinlu">
+          <div className="mock-face">
+            <span />
+          </div>
+          <div className="mock-readout">
+            <strong>Exemple d&apos;analyse</strong>
+            <div>
+              <span>Hydratation</span>
+              <b>Faible</b>
+            </div>
+            <div>
+              <span>Pores visibles</span>
+              <b>Modéré</b>
+            </div>
+            <div>
+              <span>Sensibilite</span>
+              <b>Élevée</b>
+            </div>
+          </div>
+        </div>
       </section>
 
       <section className="upload-panel" aria-label="Diagnostic de peau">
@@ -366,24 +397,56 @@ export default function Home() {
         </div>
 
         <form onSubmit={handleSubmit} className="upload-form">
-          <label className="drop-zone">
-            <input
-              type="file"
-              name="selfie"
-              accept="image/jpeg,image/png,image/webp"
-              onChange={handleSelfieChange}
-            />
+          <div className="selfie-picker">
             {previewUrl ? (
-              <img src={previewUrl} alt="Preview du selfie" className="photo-preview" />
+              <div className="drop-zone has-preview">
+                <img src={previewUrl} alt="Preview du selfie" className="photo-preview" />
+              </div>
+            ) : isMobile ? (
+              <div className="mobile-photo-actions">
+                <label className="photo-action primary">
+                  <input
+                    type="file"
+                    name="selfie_camera"
+                    accept="image/*"
+                    capture="user"
+                    onChange={handleSelfieChange}
+                  />
+                  <strong>Prendre un selfie</strong>
+                  <span>Caméra frontale</span>
+                </label>
+                <label className="photo-action">
+                  <input
+                    type="file"
+                    name="selfie_gallery"
+                    accept="image/*"
+                    onChange={handleSelfieChange}
+                  />
+                  <strong>Choisir une photo</strong>
+                  <span>Depuis la galerie</span>
+                </label>
+              </div>
             ) : (
-              <span className="drop-zone-empty">
-                <strong>Selectionner un selfie</strong>
-                <span>{helperText}</span>
-              </span>
+              <label className="drop-zone">
+                <input
+                  type="file"
+                  name="selfie"
+                  accept="image/jpeg,image/png,image/webp"
+                  onChange={handleSelfieChange}
+                />
+                <span className="drop-zone-empty">
+                <strong>Sélectionner un selfie</strong>
+                  <span>{helperText}</span>
+                </span>
+              </label>
             )}
-          </label>
+          </div>
 
           {previewUrl && selfie ? <p className="file-meta">{formatBytes(selfie.size)}</p> : null}
+
+          <p className="upload-reassurance">
+            Ton selfie est analysé puis supprimé. Jamais stocké.
+          </p>
 
           <fieldset className="skin-type-fieldset">
             <legend>Type de peau ressenti</legend>
@@ -408,21 +471,12 @@ export default function Home() {
             </div>
           </fieldset>
 
-          <label className="email-field">
-            <span>Email</span>
-            <input
-              type="email"
-              value={email}
-              onChange={(event) => setEmail(event.target.value)}
-              placeholder="vous@email.com"
-            />
-          </label>
-
           {error ? <p className="form-error">{error}</p> : null}
 
           <button className="analyze-button" type="submit" disabled={loading}>
-            {loading ? "Diagnostic en cours..." : "Analyser ma peau"}
+            {loading ? "Diagnostic en cours..." : "Voir mon analyse gratuite"}
           </button>
+          <p className="cta-microcopy">Gratuit - Résultat en 30 secondes</p>
         </form>
 
         {loading ? (
@@ -435,7 +489,7 @@ export default function Home() {
 
         {diagnostic ? (
           <div className="result-panel" role="status" aria-live="polite">
-            <span className="status-label">Apercu gratuit</span>
+            <span className="status-label">Aperçu gratuit</span>
             <div className="diagnostic-summary">
               <h2>{concernLabel(diagnostic.top_priority)}</h2>
               <p>{diagnostic.summary}</p>
@@ -447,18 +501,28 @@ export default function Home() {
               ))}
             </div>
 
-            <div className="locked-section" aria-label="Routine complete masquee">
+            <div className="locked-section" aria-label="Routine complète masquée">
               <div className="locked-header">
-                <span>Routine complete AM/PM</span>
-                <strong>Verrouille</strong>
+                <span>Routine complète AM/PM</span>
+                <strong>Verrouillée</strong>
               </div>
-              <div className="paywall-teasers" aria-label="Apercu du rapport">
+              <div className="paywall-teasers" aria-label="Aperçu du rapport">
                 <span>Routine matin</span>
                 <span>Routine soir</span>
                 <span>Produits multi-marques</span>
-                <span>Liens affilies</span>
+                <span>Liens affiliés</span>
               </div>
             </div>
+
+            <label className="email-field unlock-email">
+              <span>Email pour recevoir ta routine</span>
+              <input
+                type="email"
+                value={email}
+                onChange={(event) => setEmail(event.target.value)}
+                placeholder="vous@email.com"
+              />
+            </label>
 
             <button
               className="stripe-button"
@@ -468,7 +532,7 @@ export default function Home() {
             >
               {checkoutLoading
                 ? "Ouverture de Stripe..."
-                : "Debloquer ma routine complete - 9,99 EUR"}
+                : "Débloquer ma routine complète - 9,99 EUR"}
             </button>
             <p className="paywall-note">
               Le paiement debloque la routine AM/PM et les produits recommandes.
@@ -485,10 +549,10 @@ export default function Home() {
             ) : null}
 
             {routine ? (
-              <section className="full-report" aria-label="Routine complete">
+              <section className="full-report" aria-label="Routine complète">
                 <div className="report-heading">
-                  <span>Routine complete</span>
-                  <strong>Debloquee</strong>
+                  <span>Routine complète</span>
+                  <strong>Débloquée</strong>
                 </div>
 
                 <section className="compatibility-card">
@@ -512,6 +576,17 @@ export default function Home() {
           </div>
         ) : null}
       </section>
+
+      <footer className="site-footer">
+        <p>
+          Analyse cosmétique informative. Skinlu ne fournit pas de diagnostic
+          médical ou dermatologique.
+        </p>
+        <nav aria-label="Liens legaux">
+          <a href="/mentions-legales">Mentions légales</a>
+          <a href="/politique-de-confidentialite">Politique de confidentialité</a>
+        </nav>
+      </footer>
     </main>
   );
 }
