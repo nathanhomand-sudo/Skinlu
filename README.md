@@ -1,6 +1,7 @@
 # Skinlu
 
-Next.js MVP for AI-based skincare label decoding with one-time Stripe Checkout unlock.
+Next.js MVP for AI-based skincare diagnostics, personalized routines, and
+multi-brand product recommendations with one-time Stripe Checkout unlock.
 
 ## Environment
 
@@ -13,9 +14,17 @@ BLOB_READ_WRITE_TOKEN=
 STRIPE_SECRET_KEY=
 STRIPE_WEBHOOK_SECRET=
 STRIPE_PRICE_ID=
+NEXT_PUBLIC_SUPABASE_URL=
+SUPABASE_SERVICE_ROLE_KEY=
 ```
 
 `STRIPE_PRICE_ID` must be a one-time payment Price, for example a 9.99 EUR price created in Stripe test mode.
+
+## Supabase
+
+Create a Supabase project, then run `supabase/schema.sql` in the SQL editor.
+The `products` table is intentionally empty. Add real FR products and affiliate
+links manually before expecting product recommendations to appear.
 
 ## Development
 

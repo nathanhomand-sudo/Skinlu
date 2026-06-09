@@ -214,6 +214,21 @@ function setCachedResult(hash: string, result: VisualAgeResult) {
   });
 }
 
+function publicAnalysisResult(result: VisualAgeResult) {
+  if ("error" in result) {
+    return result;
+  }
+
+  return {
+    product_name: result.product_name,
+    ingredients_count: result.ingredients_count,
+    score: result.score,
+    verdict: result.verdict,
+    top_ingredients_free: result.top_ingredients_free,
+    error: null,
+  };
+}
+
 async function analyzeImageUrl(imageUrl: string, skinType: SkinType) {
   if (!process.env.OPENAI_API_KEY) {
     throw new Error("OPENAI_API_KEY is missing.");
@@ -336,7 +351,7 @@ export async function POST(request: Request) {
 
   if (cachedResult) {
     return NextResponse.json({
-      ...cachedResult,
+      ...publicAnalysisResult(cachedResult),
       result_id: imageHash,
     });
   }
@@ -364,7 +379,7 @@ export async function POST(request: Request) {
     setCachedResult(cacheKey, result);
 
     return NextResponse.json({
-      ...result,
+      ...publicAnalysisResult(result),
       result_id: imageHash,
     });
   } catch (error) {

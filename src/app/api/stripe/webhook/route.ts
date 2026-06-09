@@ -36,10 +36,10 @@ export async function POST(request: Request) {
 
   if (event.type === "checkout.session.completed") {
     const session = event.data.object;
-    const accessToken = session.metadata?.accessToken;
+    const sessionToken = session.metadata?.sessionToken;
 
-    if (accessToken) {
-      markCheckoutRecordPaid(accessToken, session.id);
+    if (sessionToken) {
+      await markCheckoutRecordPaid(sessionToken, session.id);
     }
   }
 

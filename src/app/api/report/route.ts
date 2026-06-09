@@ -1,11 +1,12 @@
 import { NextResponse } from "next/server";
-import { isCheckoutRecordPaid } from "@/lib/checkout-store";
-import { fullReportSchema, type VisualAgeResult } from "@/lib/visual-age";
+import { getPaidDiagnostic } from "@/lib/checkout-store";
+import { buildRoutineFromProducts } from "@/lib/matching";
+import type { Concern } from "@/lib/skin-diagnostic";
+import { getSupabaseAdmin } from "@/lib/supabase";
+import type { SkinType } from "@/lib/visual-age";
 
 export const runtime = "nodejs";
 export const maxDuration = 60;
-
-const DISCLAIMER = "Ceci est une estimation visuelle, pas un diagnostic medical.";
 
 function jsonError(error: string, status: number) {
   return NextResponse.json({ error }, { status });
@@ -13,30 +14,62 @@ function jsonError(error: string, status: number) {
 
 export async function POST(request: Request) {
   const body = (await request.json()) as {
-    resultId?: string;
-    accessToken?: string;
-    result?: VisualAgeResult;
+    sessionToken?: string;
   };
 
-  if (!body.resultId || !body.accessToken || !body.result) {
-    return jsonError("report_payload_invalid", 400);
+  if (!body.sessionToken) {
+    return jsonError("session_token_required", 400);
   }
 
-  if ("error" in body.result) {
-    return jsonError("no_label_detected", 400);
+  try {
+    const diagnostic = await getPaidDiagnostic(body.sessionToken);
+
+    if (!diagnostic) {
+      return jsonError("report_locked", 402);
+    }
+
+    const supabase = getSupabaseAdmin();
+    const { data: existingRoutine, error: routineQueryError } = await supabase
+      .from("routines")
+      .select("*")
+      .eq("diagnostic_id", diagnostic.id)
+      .maybeSingle();
+
+    if (routineQueryError) {
+      throw new Error(`routine_query_failed: ${routineQueryError.message}`);
+    }
+
+    const routine = await buildRoutineFromProducts(
+      supabase,
+      diagnostic.concerns as Concern[],
+      diagnostic.skin_type as SkinType,
+      diagnostic.top_priority as Concern,
+    );
+
+    if (!existingRoutine) {
+      const { error: insertError } = await supabase.from("routines").insert({
+        diagnostic_id: diagnostic.id,
+        morning_product_ids: routine.morning.map((product) => product.id),
+        evening_product_ids: routine.evening.map((product) => product.id),
+        ai_explanation: routine.ai_explanation,
+      });
+
+      if (insertError) {
+        throw new Error(`routine_insert_failed: ${insertError.message}`);
+      }
+    }
+
+    return NextResponse.json({
+      skin_type: diagnostic.skin_type,
+      concerns: diagnostic.concerns,
+      top_priority: diagnostic.top_priority,
+      morning: routine.morning,
+      evening: routine.evening,
+      ai_explanation: routine.ai_explanation,
+      disclaimer: "Routine cosmetique informative, pas un diagnostic medical.",
+    });
+  } catch (error) {
+    console.error("report_generation_failed", error);
+    return jsonError("report_generation_failed", 500);
   }
-
-  if (!isCheckoutRecordPaid(body.accessToken, body.resultId)) {
-    return jsonError("report_locked", 402);
-  }
-
-  const report = fullReportSchema.parse({
-    full_analysis: body.result.full_analysis,
-    skin_type_compatibility: body.result.skin_type_compatibility,
-    warnings: body.result.warnings,
-    positives: body.result.positives,
-    disclaimer: DISCLAIMER,
-  });
-
-  return NextResponse.json(report);
 }

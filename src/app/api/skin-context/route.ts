@@ -1,13 +1,12 @@
 import { NextResponse } from "next/server";
 import OpenAI from "openai";
-import { isCheckoutRecordPaid } from "@/lib/checkout-store";
 import {
-  buildSkinContextPrompt,
-  parseSkinContextResult,
-  skinContextJsonSchema,
-  skinTypeSchema,
-  visualAgeSchema,
-} from "@/lib/visual-age";
+  buildSkinDiagnosticPrompt,
+  parseSkinDiagnostic,
+  skinDiagnosticJsonSchema,
+} from "@/lib/skin-diagnostic";
+import { getSupabaseAdmin } from "@/lib/supabase";
+import { skinTypeSchema } from "@/lib/visual-age";
 
 const ACCEPTED_TYPES = new Set(["image/jpeg", "image/png", "image/webp"]);
 const MAX_FILE_SIZE = 4 * 1024 * 1024;
@@ -43,19 +42,12 @@ export async function POST(request: Request) {
     return jsonError("multipart_form_required", 400);
   }
 
-  const photo = formData.get("photo");
-  const resultId = formData.get("result_id");
-  const accessToken = formData.get("access_token");
+  const selfie = formData.get("selfie");
   const skinTypeInput = formData.get("skin_type");
-  const resultInput = formData.get("result");
+  const emailInput = formData.get("email");
 
-  if (
-    !(photo instanceof File) ||
-    typeof resultId !== "string" ||
-    typeof accessToken !== "string" ||
-    typeof resultInput !== "string"
-  ) {
-    return jsonError("skin_context_payload_invalid", 400);
+  if (!(selfie instanceof File)) {
+    return jsonError("selfie_required", 400);
   }
 
   const skinType = skinTypeSchema.safeParse(skinTypeInput);
@@ -64,15 +56,11 @@ export async function POST(request: Request) {
     return jsonError("skin_type_required", 400);
   }
 
-  if (!isCheckoutRecordPaid(accessToken, resultId)) {
-    return jsonError("report_locked", 402);
-  }
-
-  if (!ACCEPTED_TYPES.has(photo.type)) {
+  if (!ACCEPTED_TYPES.has(selfie.type)) {
     return jsonError("invalid_file_type", 400);
   }
 
-  if (photo.size > MAX_FILE_SIZE) {
+  if (selfie.size > MAX_FILE_SIZE) {
     return jsonError("file_too_large", 400);
   }
 
@@ -80,14 +68,8 @@ export async function POST(request: Request) {
     return jsonError("openai_key_missing", 500);
   }
 
-  const result = visualAgeSchema.safeParse(JSON.parse(resultInput));
-
-  if (!result.success || "error" in result.data) {
-    return jsonError("analysis_result_invalid", 400);
-  }
-
   try {
-    const buffer = await photo.arrayBuffer();
+    const buffer = await selfie.arrayBuffer();
     const client = new OpenAI({
       apiKey: process.env.OPENAI_API_KEY,
     });
@@ -101,11 +83,11 @@ export async function POST(request: Request) {
             content: [
               {
                 type: "input_text",
-                text: buildSkinContextPrompt(skinType.data, result.data),
+                text: buildSkinDiagnosticPrompt(skinType.data),
               },
               {
                 type: "input_image",
-                image_url: imageDataUrl(buffer, photo.type),
+                image_url: imageDataUrl(buffer, selfie.type),
                 detail: "high",
               },
             ],
@@ -114,7 +96,7 @@ export async function POST(request: Request) {
         text: {
           format: {
             type: "json_schema",
-            ...skinContextJsonSchema,
+            ...skinDiagnosticJsonSchema,
           },
         },
       }),
@@ -122,14 +104,42 @@ export async function POST(request: Request) {
       "openai_timeout",
     );
 
-    return NextResponse.json(parseSkinContextResult(response.output_text));
+    const diagnostic = parseSkinDiagnostic(response.output_text);
+    const sessionToken = crypto.randomUUID();
+    const email =
+      typeof emailInput === "string" && emailInput.trim()
+        ? emailInput.trim()
+        : null;
+
+    const supabase = getSupabaseAdmin();
+    const { error } = await supabase.from("diagnostics").insert({
+      session_token: sessionToken,
+      skin_type: diagnostic.skin_type,
+      concerns: diagnostic.concerns,
+      top_priority: diagnostic.top_priority,
+      email,
+    });
+
+    if (error) {
+      console.error("diagnostic_insert_failed", error);
+      return jsonError("diagnostic_save_failed", 500);
+    }
+
+    return NextResponse.json({
+      session_token: sessionToken,
+      skin_type: diagnostic.skin_type,
+      concerns: diagnostic.concerns.slice(0, 2),
+      top_priority: diagnostic.top_priority,
+      summary: diagnostic.summary,
+      disclaimer: "Analyse cosmetique generee par IA, pas un diagnostic medical.",
+    });
   } catch (error) {
-    console.error("skin_context_analysis_failed", error);
+    console.error("skin_diagnostic_failed", error);
 
     if (error instanceof Error && error.message === "openai_timeout") {
       return jsonError("service_timeout", 504);
     }
 
-    return jsonError("skin_context_failed", 500);
+    return jsonError("skin_diagnostic_failed", 500);
   }
 }

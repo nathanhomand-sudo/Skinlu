@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
-import { createCheckoutRecord } from "@/lib/checkout-store";
+import { attachCheckoutEmail } from "@/lib/checkout-store";
+import { getSupabaseAdmin } from "@/lib/supabase";
 import { getStripe } from "@/lib/stripe";
 
 export const runtime = "nodejs";
@@ -9,18 +10,19 @@ function jsonError(error: string, status: number) {
 }
 
 export async function POST(request: Request) {
-  let body: { resultId?: string };
+  let body: { sessionToken?: string; email?: string };
 
   try {
-    body = (await request.json()) as { resultId?: string };
+    body = (await request.json()) as { sessionToken?: string; email?: string };
   } catch {
     return jsonError("json_body_required", 400);
   }
 
-  const { resultId } = body;
+  const { sessionToken } = body;
+  const email = body.email?.trim() || null;
 
-  if (!resultId) {
-    return jsonError("result_id_required", 400);
+  if (!sessionToken) {
+    return jsonError("session_token_required", 400);
   }
 
   if (!process.env.STRIPE_PRICE_ID) {
@@ -31,7 +33,23 @@ export async function POST(request: Request) {
   let sessionUrl: string | null;
 
   try {
-    const accessToken = createCheckoutRecord(resultId);
+    const supabase = getSupabaseAdmin();
+    const { data: diagnostic, error: diagnosticError } = await supabase
+      .from("diagnostics")
+      .select("id")
+      .eq("session_token", sessionToken)
+      .maybeSingle();
+
+    if (diagnosticError) {
+      throw new Error(`diagnostic_query_failed: ${diagnosticError.message}`);
+    }
+
+    if (!diagnostic) {
+      return jsonError("diagnostic_not_found", 404);
+    }
+
+    await attachCheckoutEmail(sessionToken, email);
+
     const stripe = getStripe();
     const session = await stripe.checkout.sessions.create({
       mode: "payment",
@@ -41,13 +59,13 @@ export async function POST(request: Request) {
           quantity: 1,
         },
       ],
+      customer_email: email ?? undefined,
       metadata: {
-        resultId,
-        accessToken,
+        sessionToken,
       },
-      success_url: `${origin}/?payment=success&result_id=${encodeURIComponent(
-        resultId,
-      )}&access_token=${encodeURIComponent(accessToken)}`,
+      success_url: `${origin}/?payment=success&session_token=${encodeURIComponent(
+        sessionToken,
+      )}`,
       cancel_url: `${origin}/?payment=cancelled`,
     });
 

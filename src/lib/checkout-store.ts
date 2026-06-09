@@ -1,50 +1,51 @@
-type CheckoutRecord = {
-  resultId: string;
-  paid: boolean;
-  stripeSessionId?: string;
-  createdAt: number;
-};
+import { getSupabaseAdmin } from "@/lib/supabase";
 
-const globalCheckoutStore = globalThis as typeof globalThis & {
-  checkoutStore?: Map<string, CheckoutRecord>;
-};
-
-export const checkoutStore =
-  globalCheckoutStore.checkoutStore ?? new Map<string, CheckoutRecord>();
-
-globalCheckoutStore.checkoutStore = checkoutStore;
-
-export function createCheckoutRecord(resultId: string) {
-  const accessToken = crypto.randomUUID();
-  checkoutStore.set(accessToken, {
-    resultId,
-    paid: false,
-    createdAt: Date.now(),
-  });
-
-  return accessToken;
-}
-
-export function markCheckoutRecordPaid(
-  accessToken: string,
-  stripeSessionId: string,
-) {
-  const record = checkoutStore.get(accessToken);
-
-  if (!record) {
-    return false;
+export async function attachCheckoutEmail(sessionToken: string, email: string | null) {
+  if (!email) {
+    return;
   }
 
-  checkoutStore.set(accessToken, {
-    ...record,
-    paid: true,
-    stripeSessionId,
-  });
+  const supabase = getSupabaseAdmin();
+  const { error } = await supabase
+    .from("diagnostics")
+    .update({ email })
+    .eq("session_token", sessionToken);
 
-  return true;
+  if (error) {
+    throw new Error(`diagnostic_email_update_failed: ${error.message}`);
+  }
 }
 
-export function isCheckoutRecordPaid(accessToken: string, resultId: string) {
-  const record = checkoutStore.get(accessToken);
-  return Boolean(record?.paid && record.resultId === resultId);
+export async function markCheckoutRecordPaid(
+  sessionToken: string,
+  stripeSessionId: string,
+) {
+  const supabase = getSupabaseAdmin();
+  const { error } = await supabase
+    .from("diagnostics")
+    .update({
+      paid: true,
+      stripe_session_id: stripeSessionId,
+    })
+    .eq("session_token", sessionToken);
+
+  if (error) {
+    throw new Error(`diagnostic_payment_update_failed: ${error.message}`);
+  }
+}
+
+export async function getPaidDiagnostic(sessionToken: string) {
+  const supabase = getSupabaseAdmin();
+  const { data, error } = await supabase
+    .from("diagnostics")
+    .select("*")
+    .eq("session_token", sessionToken)
+    .eq("paid", true)
+    .maybeSingle();
+
+  if (error) {
+    throw new Error(`paid_diagnostic_query_failed: ${error.message}`);
+  }
+
+  return data;
 }

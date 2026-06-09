@@ -2,81 +2,68 @@
 
 /* eslint-disable @next/next/no-img-element */
 
-import {
-  ChangeEvent,
-  FormEvent,
-  useCallback,
-  useEffect,
-  useMemo,
-  useState,
-} from "react";
-import type {
-  FullReport,
-  SkinContextResult,
-  SkinType,
-  VisualAgeResult,
-} from "@/lib/visual-age";
+import { ChangeEvent, FormEvent, useCallback, useEffect, useMemo, useState } from "react";
+import type { Concern } from "@/lib/skin-diagnostic";
+import type { Product } from "@/lib/matching";
+import type { SkinType } from "@/lib/visual-age";
 
 const ACCEPTED_TYPES = ["image/jpeg", "image/png", "image/webp"];
 const MAX_FILE_SIZE = 4 * 1024 * 1024;
 const ANALYSIS_TIMEOUT_MS = 70_000;
-const RESULT_STORAGE_KEY = "visual-age:last-skincare-result";
-const PAID_ACCESS_STORAGE_KEY = "visual-age:last-paid-access";
+const DIAGNOSTIC_STORAGE_KEY = "skinlu:last-diagnostic";
 
 const SKIN_TYPES: { value: SkinType; label: string }[] = [
-  { value: "dry", label: "Sèche" },
+  { value: "dry", label: "Seche" },
   { value: "oily", label: "Grasse" },
   { value: "combination", label: "Mixte" },
   { value: "sensitive", label: "Sensible" },
   { value: "normal", label: "Normale" },
 ];
 
-type UploadState = "idle" | "ready" | "loading" | "done";
-type ClientVisualAgeResult = VisualAgeResult & {
-  result_id?: string;
+const CONCERN_LABELS: Record<Concern, string> = {
+  acne: "Imperfections",
+  dehydration: "Deshydratation",
+  dark_spots: "Taches",
+  aging: "Signes de l'age",
+  sensitivity: "Sensibilite",
+  dullness: "Teint terne",
+  enlarged_pores: "Pores visibles",
 };
 
-type PaidAccess = {
-  accessToken: string;
-  resultId: string;
+type DiagnosticPreview = {
+  session_token: string;
+  skin_type: SkinType;
+  concerns: Concern[];
+  top_priority: Concern;
+  summary: string;
+  disclaimer: string;
 };
 
-type IngredientVerdict = "bon" | "neutre" | "attention";
+type RoutineReport = {
+  skin_type: SkinType;
+  concerns: Concern[];
+  top_priority: Concern;
+  morning: Product[];
+  evening: Product[];
+  ai_explanation: string;
+  disclaimer: string;
+};
 
-function getStoredResult() {
+function getStoredDiagnostic() {
   if (typeof window === "undefined") {
     return null;
   }
 
-  const storedResult = window.localStorage.getItem(RESULT_STORAGE_KEY);
+  const stored = window.localStorage.getItem(DIAGNOSTIC_STORAGE_KEY);
 
-  if (!storedResult) {
+  if (!stored) {
     return null;
   }
 
   try {
-    return JSON.parse(storedResult) as ClientVisualAgeResult;
+    return JSON.parse(stored) as DiagnosticPreview;
   } catch {
-    window.localStorage.removeItem(RESULT_STORAGE_KEY);
-    return null;
-  }
-}
-
-function getStoredPaidAccess() {
-  if (typeof window === "undefined") {
-    return null;
-  }
-
-  const storedAccess = window.localStorage.getItem(PAID_ACCESS_STORAGE_KEY);
-
-  if (!storedAccess) {
-    return null;
-  }
-
-  try {
-    return JSON.parse(storedAccess) as PaidAccess;
-  } catch {
-    window.localStorage.removeItem(PAID_ACCESS_STORAGE_KEY);
+    window.localStorage.removeItem(DIAGNOSTIC_STORAGE_KEY);
     return null;
   }
 }
@@ -97,46 +84,64 @@ function validateFile(file: File) {
   return null;
 }
 
-function getVerdictLabel(verdict: IngredientVerdict) {
-  if (verdict === "bon") {
-    return "Bon";
+function concernLabel(concern: Concern) {
+  return CONCERN_LABELS[concern] ?? concern;
+}
+
+function ProductList({ products }: { products: Product[] }) {
+  if (products.length === 0) {
+    return (
+      <p className="empty-routine">
+        Aucun produit disponible pour l&apos;instant. Ajoutez le catalogue produits
+        dans Supabase pour activer les recommandations.
+      </p>
+    );
   }
 
-  if (verdict === "attention") {
-    return "Attention";
-  }
-
-  return "Neutre";
+  return (
+    <div className="routine-products">
+      {products.map((product) => (
+        <article className="product-card" key={product.id}>
+          {product.image_url ? (
+            <img src={product.image_url} alt="" className="product-image" />
+          ) : null}
+          <div>
+            <span>{product.brand}</span>
+            <strong>{product.name}</strong>
+            <small>
+              {product.price_eur ? `${product.price_eur.toFixed(2)} EUR` : "Prix a verifier"}
+            </small>
+          </div>
+          <a href={product.affiliate_url} target="_blank" rel="noreferrer">
+            Voir le produit
+          </a>
+        </article>
+      ))}
+    </div>
+  );
 }
 
 export default function Home() {
-  const [file, setFile] = useState<File | null>(null);
+  const [selfie, setSelfie] = useState<File | null>(null);
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
   const [skinType, setSkinType] = useState<SkinType>("sensitive");
+  const [email, setEmail] = useState("");
   const [error, setError] = useState<string | null>(null);
-  const [result, setResult] = useState<ClientVisualAgeResult | null>(
-    getStoredResult,
-  );
-  const [uploadState, setUploadState] = useState<UploadState>(() =>
-    getStoredResult() ? "done" : "idle",
-  );
-  const [fullReport, setFullReport] = useState<FullReport | null>(null);
+  const [loading, setLoading] = useState(false);
+  const [checkoutLoading, setCheckoutLoading] = useState(false);
   const [reportLoading, setReportLoading] = useState(false);
-  const [paidAccess, setPaidAccess] = useState<PaidAccess | null>(
-    getStoredPaidAccess,
+  const [diagnostic, setDiagnostic] = useState<DiagnosticPreview | null>(
+    getStoredDiagnostic,
   );
-  const [skinPhoto, setSkinPhoto] = useState<File | null>(null);
-  const [skinPreviewUrl, setSkinPreviewUrl] = useState<string | null>(null);
-  const [skinContext, setSkinContext] = useState<SkinContextResult | null>(null);
-  const [skinContextLoading, setSkinContextLoading] = useState(false);
+  const [routine, setRoutine] = useState<RoutineReport | null>(null);
 
   const helperText = useMemo(() => {
-    if (!file) {
-      return "JPG, PNG ou WebP. 4 MB maximum.";
+    if (!selfie) {
+      return "Selfie net, visage bien eclaire. JPG, PNG ou WebP. 4 MB max.";
     }
 
-    return `Étiquette prête - ${formatBytes(file.size)}`;
-  }, [file]);
+    return `Selfie pret - ${formatBytes(selfie.size)}`;
+  }, [selfie]);
 
   useEffect(() => {
     return () => {
@@ -146,193 +151,78 @@ export default function Home() {
     };
   }, [previewUrl]);
 
-  useEffect(() => {
-    return () => {
-      if (skinPreviewUrl) {
-        URL.revokeObjectURL(skinPreviewUrl);
-      }
-    };
-  }, [skinPreviewUrl]);
-
-  function resetResultState() {
-    setResult(null);
-    setFullReport(null);
-    setPaidAccess(null);
-    setSkinPhoto(null);
-    setSkinPreviewUrl((currentUrl) => {
-      if (currentUrl) {
-        URL.revokeObjectURL(currentUrl);
-      }
-      return null;
-    });
-    setSkinContext(null);
-    window.localStorage.removeItem(RESULT_STORAGE_KEY);
-    window.localStorage.removeItem(PAID_ACCESS_STORAGE_KEY);
+  function clearPaidState() {
+    setRoutine(null);
   }
 
-  function handleFileChange(event: ChangeEvent<HTMLInputElement>) {
+  function handleSelfieChange(event: ChangeEvent<HTMLInputElement>) {
     const nextFile = event.target.files?.[0] ?? null;
-    resetResultState();
+    setError(null);
+    setDiagnostic(null);
+    clearPaidState();
+    window.localStorage.removeItem(DIAGNOSTIC_STORAGE_KEY);
 
     if (!nextFile) {
-      setFile(null);
+      setSelfie(null);
       setPreviewUrl(null);
-      setUploadState("idle");
       return;
     }
 
     const validationError = validateFile(nextFile);
     if (validationError) {
-      setFile(null);
+      setSelfie(null);
       setPreviewUrl(null);
-      setUploadState("idle");
       setError(validationError);
       event.target.value = "";
       return;
     }
 
     const nextPreviewUrl = URL.createObjectURL(nextFile);
-    setFile(nextFile);
+    setSelfie(nextFile);
     setPreviewUrl((currentUrl) => {
       if (currentUrl) {
         URL.revokeObjectURL(currentUrl);
       }
       return nextPreviewUrl;
     });
-    setError(null);
-    setUploadState("ready");
   }
 
   function handleSkinTypeChange(nextSkinType: SkinType) {
     setSkinType(nextSkinType);
-    resetResultState();
-
-    if (file) {
-      setUploadState("ready");
-    }
+    setDiagnostic(null);
+    clearPaidState();
+    window.localStorage.removeItem(DIAGNOSTIC_STORAGE_KEY);
   }
 
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
 
-    if (!file) {
-      setError("Ajoutez une photo d'étiquette avant de lancer l'analyse.");
+    if (!selfie) {
+      setError("Ajoutez un selfie avant de lancer le diagnostic.");
       return;
     }
 
-    const validationError = validateFile(file);
+    const validationError = validateFile(selfie);
     if (validationError) {
       setError(validationError);
       return;
     }
 
     const body = new FormData();
-    body.append("photo", file);
+    body.append("selfie", selfie);
     body.append("skin_type", skinType);
+    if (email.trim()) {
+      body.append("email", email.trim());
+    }
 
-    setUploadState("loading");
+    setLoading(true);
     setError(null);
-    setResult(null);
+    setDiagnostic(null);
+    clearPaidState();
 
     try {
       const controller = new AbortController();
-      const timeoutId = window.setTimeout(() => {
-        controller.abort();
-      }, ANALYSIS_TIMEOUT_MS);
-
-      const response = await fetch("/api/analyze", {
-        method: "POST",
-        body,
-        signal: controller.signal,
-      });
-      window.clearTimeout(timeoutId);
-
-      const data = await response.json();
-
-      if (!response.ok) {
-        throw new Error(
-          data.error === "service_timeout"
-            ? "Le service d'analyse met trop de temps à répondre. Réessayez dans quelques instants."
-            : data.error ?? "L'analyse n'a pas pu démarrer.",
-        );
-      }
-
-      setResult(data as ClientVisualAgeResult);
-      window.localStorage.setItem(RESULT_STORAGE_KEY, JSON.stringify(data));
-      setUploadState("done");
-    } catch (caughtError) {
-      setError(
-        caughtError instanceof DOMException && caughtError.name === "AbortError"
-          ? "L'analyse prend trop de temps. Réessayez avec une photo plus nette et bien cadrée."
-          : caughtError instanceof Error
-          ? caughtError.message
-          : "Une erreur inattendue est survenue.",
-      );
-      setUploadState("ready");
-    }
-  }
-
-  function handleSkinPhotoChange(event: ChangeEvent<HTMLInputElement>) {
-    const nextFile = event.target.files?.[0] ?? null;
-    setSkinContext(null);
-
-    if (!nextFile) {
-      setSkinPhoto(null);
-      setSkinPreviewUrl(null);
-      return;
-    }
-
-    const validationError = validateFile(nextFile);
-    if (validationError) {
-      setSkinPhoto(null);
-      setSkinPreviewUrl(null);
-      setError(validationError);
-      event.target.value = "";
-      return;
-    }
-
-    const nextPreviewUrl = URL.createObjectURL(nextFile);
-    setSkinPhoto(nextFile);
-    setSkinPreviewUrl((currentUrl) => {
-      if (currentUrl) {
-        URL.revokeObjectURL(currentUrl);
-      }
-      return nextPreviewUrl;
-    });
-    setError(null);
-  }
-
-  async function handleSkinContextSubmit(event: FormEvent<HTMLFormElement>) {
-    event.preventDefault();
-
-    if (!skinPhoto || !result || "error" in result || !paidAccess) {
-      setError("Rapport débloqué et photo de peau requis.");
-      return;
-    }
-
-    const validationError = validateFile(skinPhoto);
-    if (validationError) {
-      setError(validationError);
-      return;
-    }
-
-    const body = new FormData();
-    body.append("photo", skinPhoto);
-    body.append("skin_type", skinType);
-    body.append("result_id", paidAccess.resultId);
-    body.append("access_token", paidAccess.accessToken);
-    body.append("result", JSON.stringify(result));
-
-    setSkinContextLoading(true);
-    setError(null);
-    setSkinContext(null);
-
-    try {
-      const controller = new AbortController();
-      const timeoutId = window.setTimeout(() => {
-        controller.abort();
-      }, ANALYSIS_TIMEOUT_MS);
-
+      const timeoutId = window.setTimeout(() => controller.abort(), ANALYSIS_TIMEOUT_MS);
       const response = await fetch("/api/skin-context", {
         method: "POST",
         body,
@@ -345,35 +235,33 @@ export default function Home() {
       if (!response.ok) {
         throw new Error(
           data.error === "service_timeout"
-            ? "Le contexte peau met trop de temps à répondre. Réessayez dans quelques instants."
-            : data.error ?? "Le contexte peau n'a pas pu démarrer.",
+            ? "Le diagnostic met trop de temps a repondre. Reessayez avec une photo plus nette."
+            : data.error ?? "Le diagnostic n'a pas pu demarrer.",
         );
       }
 
-      setSkinContext(data as SkinContextResult);
+      setDiagnostic(data as DiagnosticPreview);
+      window.localStorage.setItem(DIAGNOSTIC_STORAGE_KEY, JSON.stringify(data));
     } catch (caughtError) {
       setError(
         caughtError instanceof DOMException && caughtError.name === "AbortError"
-          ? "Le contexte peau prend trop de temps. Réessayez avec une photo plus nette."
+          ? "Le diagnostic prend trop de temps. Reessayez avec un selfie net et bien cadre."
           : caughtError instanceof Error
-          ? caughtError.message
-          : "Une erreur inattendue est survenue.",
+            ? caughtError.message
+            : "Une erreur inattendue est survenue.",
       );
     } finally {
-      setSkinContextLoading(false);
+      setLoading(false);
     }
   }
 
-  function handleCheckoutClick() {
-    if (!result || "error" in result || !result.result_id) {
-      setError("Analyse manquante pour ouvrir Stripe Checkout.");
+  async function startCheckout() {
+    if (!diagnostic) {
+      setError("Diagnostic manquant pour ouvrir Stripe Checkout.");
       return;
     }
 
-    void startCheckout(result.result_id);
-  }
-
-  async function startCheckout(resultId: string) {
+    setCheckoutLoading(true);
     setError(null);
 
     try {
@@ -382,7 +270,10 @@ export default function Home() {
         headers: {
           "Content-Type": "application/json",
         },
-        body: JSON.stringify({ resultId }),
+        body: JSON.stringify({
+          sessionToken: diagnostic.session_token,
+          email: email.trim() || undefined,
+        }),
       });
       const data = await response.json();
 
@@ -397,129 +288,105 @@ export default function Home() {
           ? caughtError.message
           : "Stripe Checkout indisponible.",
       );
+      setCheckoutLoading(false);
     }
   }
 
-  const unlockReport = useCallback(
-    async (accessToken: string, resultId: string) => {
-      if (!result || "error" in result) {
-        return;
+  const unlockReport = useCallback(async (sessionToken: string) => {
+    setReportLoading(true);
+    setError(null);
+
+    try {
+      const response = await fetch("/api/report", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ sessionToken }),
+      });
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(
+          data.error === "report_locked"
+            ? "Paiement en cours de validation. Rechargez dans quelques secondes."
+            : data.error ?? "Routine verrouillee.",
+        );
       }
 
-      setReportLoading(true);
-      setError(null);
-
-      try {
-        const response = await fetch("/api/report", {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({
-            accessToken,
-            resultId,
-            result,
-          }),
-        });
-        const data = await response.json();
-
-        if (!response.ok) {
-          throw new Error(data.error ?? "Rapport verrouillé.");
-        }
-
-        setFullReport(data as FullReport);
-        const nextPaidAccess = { accessToken, resultId };
-        setPaidAccess(nextPaidAccess);
-        window.localStorage.setItem(
-          PAID_ACCESS_STORAGE_KEY,
-          JSON.stringify(nextPaidAccess),
-        );
-      } catch (caughtError) {
-        setError(
-          caughtError instanceof Error
-            ? caughtError.message
-            : "Rapport verrouillé.",
-        );
-      } finally {
-        setReportLoading(false);
-      }
-    },
-    [result],
-  );
+      setRoutine(data as RoutineReport);
+    } catch (caughtError) {
+      setError(
+        caughtError instanceof Error ? caughtError.message : "Routine verrouillee.",
+      );
+    } finally {
+      setReportLoading(false);
+    }
+  }, []);
 
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
-    const accessToken = params.get("access_token");
-    const resultId = params.get("result_id");
+    const sessionToken = params.get("session_token");
 
-    if (params.get("payment") === "success" && accessToken && resultId) {
+    if (params.get("payment") === "success" && sessionToken) {
       window.setTimeout(() => {
-        void unlockReport(accessToken, resultId);
+        void unlockReport(sessionToken);
       }, 0);
       window.history.replaceState(null, "", window.location.pathname);
     }
-  }, [result, unlockReport]);
-
-  const isLoading = uploadState === "loading";
-  const hasValidResult = Boolean(result && !("error" in result));
+  }, [unlockReport]);
 
   return (
-    <main className={`app-shell ${hasValidResult ? "has-result" : ""}`}>
+    <main className={`app-shell ${diagnostic ? "has-result" : ""}`}>
       <section className="hero-panel" aria-labelledby="product-title">
-        <div className="eyebrow">Décodeur skincare par IA</div>
+        <div className="eyebrow">Diagnostic de peau par IA</div>
         <h1 id="product-title">Skinlu</h1>
         <p className="lead">
-          Importez une photo d&apos;étiquette skincare. L&apos;IA lit les
-          ingrédients et estime leur compatibilité avec votre type de peau.
+          Ajoutez un selfie, obtenez un apercu cosmetique de votre peau, puis
+          debloquez une routine de soin personnalisee avec produits multi-marques.
         </p>
         <p className="privacy-note">
-          Votre photo est analysée et immédiatement supprimée. Aucun stockage.
+          Votre selfie sert a generer l&apos;analyse et n&apos;est pas conserve comme
+          fichier par Skinlu.
         </p>
         <p className="disclaimer-note">
-          Analyse cosmétique générée par IA, à partir des informations visibles.
-          Ce service ne remplace pas un avis médical ou dermatologique.
+          Analyse cosmetique informative. Skinlu ne fournit pas de diagnostic
+          medical ou dermatologique.
         </p>
-        <nav className="legal-links" aria-label="Liens légaux">
-          <a href="/mentions-legales">Mentions légales</a>
-          <a href="/politique-de-confidentialite">
-            Politique de confidentialité
-          </a>
+        <nav className="legal-links" aria-label="Liens legaux">
+          <a href="/mentions-legales">Mentions legales</a>
+          <a href="/politique-de-confidentialite">Politique de confidentialite</a>
         </nav>
       </section>
 
-      <section className="upload-panel" aria-label="Upload étiquette skincare">
+      <section className="upload-panel" aria-label="Diagnostic de peau">
         <div className="panel-heading">
-          <span>Étiquette produit</span>
+          <span>Selfie peau</span>
           <strong>4 MB max</strong>
         </div>
+
         <form onSubmit={handleSubmit} className="upload-form">
           <label className="drop-zone">
             <input
               type="file"
-              name="photo"
+              name="selfie"
               accept="image/jpeg,image/png,image/webp"
-              onChange={handleFileChange}
+              onChange={handleSelfieChange}
             />
             {previewUrl ? (
-              <img
-                src={previewUrl}
-                alt="Preview de l'étiquette sélectionnée"
-                className="photo-preview"
-              />
+              <img src={previewUrl} alt="Preview du selfie" className="photo-preview" />
             ) : (
               <span className="drop-zone-empty">
-                <strong>Sélectionner une étiquette</strong>
+                <strong>Selectionner un selfie</strong>
                 <span>{helperText}</span>
               </span>
             )}
           </label>
 
-          {previewUrl && file ? (
-            <p className="file-meta">{formatBytes(file.size)}</p>
-          ) : null}
+          {previewUrl && selfie ? <p className="file-meta">{formatBytes(selfie.size)}</p> : null}
 
           <fieldset className="skin-type-fieldset">
-            <legend>Type de peau</legend>
+            <legend>Type de peau ressenti</legend>
             <div className="skin-type-grid">
               {SKIN_TYPES.map((option) => (
                 <label
@@ -541,14 +408,24 @@ export default function Home() {
             </div>
           </fieldset>
 
+          <label className="email-field">
+            <span>Email</span>
+            <input
+              type="email"
+              value={email}
+              onChange={(event) => setEmail(event.target.value)}
+              placeholder="vous@email.com"
+            />
+          </label>
+
           {error ? <p className="form-error">{error}</p> : null}
 
-          <button className="analyze-button" type="submit" disabled={isLoading}>
-            {isLoading ? "Analyse en cours..." : "Analyser l'étiquette"}
+          <button className="analyze-button" type="submit" disabled={loading}>
+            {loading ? "Diagnostic en cours..." : "Analyser ma peau"}
           </button>
         </form>
 
-        {isLoading ? (
+        {loading ? (
           <div className="status-box" role="status" aria-live="polite">
             <div className="skeleton-line wide" />
             <div className="skeleton-line" />
@@ -556,245 +433,82 @@ export default function Home() {
           </div>
         ) : null}
 
-        {result ? (
+        {diagnostic ? (
           <div className="result-panel" role="status" aria-live="polite">
-            {"error" in result ? (
-              <>
-                <span className="status-label">Étiquette illisible</span>
-                <p>
-                  La photo ne montre pas une étiquette skincare suffisamment
-                  lisible.
-                </p>
-              </>
-            ) : (
-              <>
-                <div className="score-row">
-                  <div>
-                    <span className="status-label">Analyse gratuite</span>
-                    <p className="score-label">
-                      Compatibilité{" "}
-                      {SKIN_TYPES.find((type) => type.value === skinType)?.label.toLowerCase()}
-                    </p>
-                  </div>
-                  <div className="score-value">
-                    <span>{Math.round(result.score)}</span>
-                    <small>/100</small>
-                  </div>
+            <span className="status-label">Apercu gratuit</span>
+            <div className="diagnostic-summary">
+              <h2>{concernLabel(diagnostic.top_priority)}</h2>
+              <p>{diagnostic.summary}</p>
+            </div>
+
+            <div className="concern-list">
+              {diagnostic.concerns.map((concern) => (
+                <span key={concern}>{concernLabel(concern)}</span>
+              ))}
+            </div>
+
+            <div className="locked-section" aria-label="Routine complete masquee">
+              <div className="locked-header">
+                <span>Routine complete AM/PM</span>
+                <strong>Verrouille</strong>
+              </div>
+              <div className="paywall-teasers" aria-label="Apercu du rapport">
+                <span>Routine matin</span>
+                <span>Routine soir</span>
+                <span>Produits multi-marques</span>
+                <span>Liens affilies</span>
+              </div>
+            </div>
+
+            <button
+              className="stripe-button"
+              type="button"
+              onClick={startCheckout}
+              disabled={checkoutLoading}
+            >
+              {checkoutLoading
+                ? "Ouverture de Stripe..."
+                : "Debloquer ma routine complete - 9,99 EUR"}
+            </button>
+            <p className="paywall-note">
+              Le paiement debloque la routine AM/PM et les produits recommandes.
+              Les recommandations dependent du catalogue produits ajoute dans
+              Supabase.
+            </p>
+
+            {reportLoading ? (
+              <div className="status-box" role="status" aria-live="polite">
+                <div className="skeleton-line wide" />
+                <div className="skeleton-line" />
+                <div className="skeleton-line short" />
+              </div>
+            ) : null}
+
+            {routine ? (
+              <section className="full-report" aria-label="Routine complete">
+                <div className="report-heading">
+                  <span>Routine complete</span>
+                  <strong>Debloquee</strong>
                 </div>
 
-                <div className="product-meta">
-                  <span>{result.product_name || "Produit non identifié"}</span>
-                  <strong>{result.ingredients_count} ingrédients lus</strong>
-                </div>
-
-                <p className="result-summary">{result.verdict}</p>
-
-                <section
-                  className="free-ingredients"
-                  aria-label="Ingrédients à regarder en premier"
-                >
-                  <div className="locked-header">
-                    <span>3 ingrédients à regarder en premier</span>
-                    <strong>Gratuit</strong>
-                  </div>
-                  <ul className="ingredient-list">
-                    {result.top_ingredients_free.map((ingredient) => (
-                      <li key={`${ingredient.name}-${ingredient.role}`}>
-                        <div>
-                          <strong>{ingredient.name}</strong>
-                          <span>{ingredient.role}</span>
-                        </div>
-                        <span className={`verdict-badge verdict-${ingredient.verdict}`}>
-                          {getVerdictLabel(ingredient.verdict)}
-                        </span>
-                      </li>
-                    ))}
-                  </ul>
+                <section className="compatibility-card">
+                  <h2>Priorite</h2>
+                  <p>{concernLabel(routine.top_priority)}</p>
                 </section>
 
-                <div className="locked-section" aria-label="Rapport complet masqué">
-                  <div className="locked-header">
-                    <span>Rapport complet</span>
-                    <strong>Verrouillé</strong>
-                  </div>
-                  <div className="paywall-teasers" aria-label="Aperçu du rapport">
-                    <span>Lecture complète de la formule</span>
-                    <span>Alertes selon votre peau</span>
-                    <span>Actifs utiles à repérer</span>
-                    <span>Affinage avec photo optionnelle</span>
-                  </div>
-                  <ul className="locked-list">
-                    {result.full_analysis.slice(0, 3).map((ingredient) => (
-                      <li key={`${ingredient.name}-${ingredient.detail}`}>
-                        <span className="blurred-text">
-                          {ingredient.name} - {ingredient.detail}
-                        </span>
-                      </li>
-                    ))}
-                  </ul>
-                </div>
+                <section className="routine-block">
+                  <h2>Matin</h2>
+                  <ProductList products={routine.morning} />
+                </section>
 
-                <button
-                  className="stripe-button"
-                  type="button"
-                  onClick={handleCheckoutClick}
-                >
-                  Débloquer mon analyse complète - 9,99 EUR
-                </button>
-                <p className="paywall-note">
-                  Le rapport complet détaille les ingrédients à privilégier,
-                  ceux à surveiller et peut être affiné avec une photo de votre
-                  peau actuelle après déblocage.
-                </p>
+                <section className="routine-block">
+                  <h2>Soir</h2>
+                  <ProductList products={routine.evening} />
+                </section>
 
-                {reportLoading ? (
-                  <div className="status-box" role="status" aria-live="polite">
-                    <div className="skeleton-line wide" />
-                    <div className="skeleton-line" />
-                    <div className="skeleton-line short" />
-                  </div>
-                ) : null}
-
-                {fullReport ? (
-                  <section className="full-report" aria-label="Rapport complet">
-                    <div className="report-heading">
-                      <span>Rapport complet</span>
-                      <strong>Débloqué</strong>
-                    </div>
-                    <section className="compatibility-card">
-                      <h2>Compatibilité peau</h2>
-                      <p>{fullReport.skin_type_compatibility}</p>
-                    </section>
-
-                    <section>
-                      <h2>Lecture complète des ingrédients</h2>
-                      <div className="ingredient-table" role="table">
-                        <div className="ingredient-table-head" role="row">
-                          <span role="columnheader">Ingrédient</span>
-                          <span role="columnheader">Rôle</span>
-                          <span role="columnheader">Verdict</span>
-                          <span role="columnheader">Détail</span>
-                        </div>
-                        {fullReport.full_analysis.map((ingredient) => (
-                          <div
-                            className="ingredient-table-row"
-                            key={`${ingredient.name}-${ingredient.detail}`}
-                            role="row"
-                          >
-                            <strong role="cell">{ingredient.name}</strong>
-                            <span role="cell">{ingredient.role}</span>
-                            <span role="cell">
-                              <span
-                                className={`verdict-badge verdict-${ingredient.verdict}`}
-                              >
-                                {getVerdictLabel(ingredient.verdict)}
-                              </span>
-                            </span>
-                            <p role="cell">{ingredient.detail}</p>
-                          </div>
-                        ))}
-                      </div>
-                    </section>
-
-                    <div className="report-lists">
-                      <section className="report-list warning-list">
-                        <h2>Points de vigilance</h2>
-                        {fullReport.warnings.length ? (
-                          <ul>
-                            {fullReport.warnings.map((warning) => (
-                              <li key={warning}>{warning}</li>
-                            ))}
-                          </ul>
-                        ) : (
-                          <p>Aucun point de vigilance majeur détecté.</p>
-                        )}
-                      </section>
-
-                      <section className="report-list positive-list">
-                        <h2>Points positifs</h2>
-                        {fullReport.positives.length ? (
-                          <ul>
-                            {fullReport.positives.map((positive) => (
-                              <li key={positive}>{positive}</li>
-                            ))}
-                          </ul>
-                        ) : (
-                          <p>Aucun bénéfice spécifique clairement lisible.</p>
-                        )}
-                      </section>
-                    </div>
-
-                    <section className="skin-context-card">
-                      <div>
-                        <h2>Affiner avec ma peau actuelle</h2>
-                        <p>
-                          Optionnel : ajoutez une photo prise maintenant pour
-                          adapter la lecture de la formule à ce que l&apos;on
-                          voit aujourd&apos;hui, comme brillance, rougeurs
-                          apparentes ou zones de sécheresse.
-                        </p>
-                      </div>
-
-                      <form
-                        className="skin-context-form"
-                        onSubmit={handleSkinContextSubmit}
-                      >
-                        <label className="skin-photo-zone">
-                          <input
-                            type="file"
-                            name="skin_photo"
-                            accept="image/jpeg,image/png,image/webp"
-                            onChange={handleSkinPhotoChange}
-                          />
-                          {skinPreviewUrl ? (
-                            <img
-                              src={skinPreviewUrl}
-                              alt="Preview de la photo de peau sélectionnée"
-                              className="skin-photo-preview"
-                            />
-                          ) : (
-                            <span>Ajouter une photo de ma peau</span>
-                          )}
-                        </label>
-                        <button
-                          className="analyze-button"
-                          type="submit"
-                          disabled={skinContextLoading}
-                        >
-                          {skinContextLoading
-                            ? "Personnalisation en cours..."
-                            : "Affiner mon rapport"}
-                        </button>
-                      </form>
-
-                      {skinContext ? (
-                        "error" in skinContext ? (
-                          <p className="form-error">
-                            La photo ne montre pas assez clairement une zone de
-                            peau.
-                          </p>
-                        ) : (
-                          <div className="skin-context-result">
-                            <strong>{skinContext.visible_skin_context}</strong>
-                            <ul>
-                              {skinContext.observations.map((observation) => (
-                                <li key={observation}>{observation}</li>
-                              ))}
-                            </ul>
-                            <p>{skinContext.personalization_note}</p>
-                            <small>{skinContext.disclaimer}</small>
-                          </div>
-                        )
-                      ) : null}
-                    </section>
-
-                    <p className="medical-disclaimer">
-                      {fullReport.disclaimer}
-                    </p>
-                  </section>
-                ) : null}
-              </>
-            )}
+                <p className="medical-disclaimer">{routine.disclaimer}</p>
+              </section>
+            ) : null}
           </div>
         ) : null}
       </section>
