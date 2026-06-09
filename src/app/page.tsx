@@ -160,6 +160,27 @@ export default function Home() {
     };
   }, [previewUrl]);
 
+  useEffect(() => {
+    const revealElements = document.querySelectorAll<HTMLElement>(".reveal");
+    const observer = new IntersectionObserver(
+      (entries) => {
+        entries.forEach((entry) => {
+          if (entry.isIntersecting) {
+            entry.target.classList.add("is-visible");
+            observer.unobserve(entry.target);
+          }
+        });
+      },
+      { rootMargin: "0px 0px -12% 0px", threshold: 0.12 },
+    );
+
+    revealElements.forEach((element) => observer.observe(element));
+
+    return () => {
+      observer.disconnect();
+    };
+  }, []);
+
   function clearPaidState() {
     setRoutine(null);
   }
@@ -659,6 +680,54 @@ export default function Home() {
             </p>
           </article>
         </div>
+      </section>
+
+      <section className="portrait-section" aria-label="Ambiance Skinlu">
+        <div className="section-heading reveal">
+          <span className="eyebrow">Skin first</span>
+          <h2>Une expérience pensée comme un éditorial beauté.</h2>
+        </div>
+        <div className="portrait-grid">
+          <article className="portrait-card portrait-card-large reveal">
+            <img src="/skinlu-face-01.png" alt="" aria-hidden="true" />
+          </article>
+          <article className="portrait-card reveal">
+            <img src="/skinlu-face-02.png" alt="" aria-hidden="true" />
+          </article>
+          <article className="portrait-card reveal">
+            <img src="/skinlu-face-03.png" alt="" aria-hidden="true" />
+          </article>
+          <article className="portrait-card portrait-card-tall reveal">
+            <img src="/skinlu-face-04.png" alt="" aria-hidden="true" />
+          </article>
+        </div>
+      </section>
+
+      <section className="review-section" aria-label="Avis Skinlu">
+        <div className="section-heading reveal">
+          <span className="eyebrow">Avis</span>
+          <h2>Le déclic : comprendre sa peau avant d’acheter.</h2>
+        </div>
+        <div className="review-grid">
+          <article className="review-card reveal">
+            <p>“Enfin un diagnostic skincare qui ne pousse pas une seule marque.”</p>
+          </article>
+          <article className="review-card reveal">
+            <p>“J’ai compris ma peau en 2 minutes, sans jargon.”</p>
+          </article>
+          <article className="review-card reveal">
+            <p>“Skinlu m’a évité d’acheter encore des produits au hasard.”</p>
+          </article>
+          <article className="review-card reveal">
+            <p>
+              “Avant, je suivais TikTok au hasard. Là, j’ai une routine adaptée
+              à ma peau.”
+            </p>
+          </article>
+        </div>
+        <blockquote className="review-pullquote reveal">
+          “C’est comme avoir une conseillère skincare, mais en plus rapide.”
+        </blockquote>
       </section>
 
       <section className="steps-section">

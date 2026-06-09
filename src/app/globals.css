@@ -67,6 +67,8 @@ a {
 .conversion-section,
 .result-preview-section,
 .product-section,
+.portrait-section,
+.review-section,
 .steps-section,
 .faq-section,
 .final-cta {
@@ -673,6 +675,93 @@ h1 span {
   color: white !important;
 }
 
+.portrait-grid {
+  display: grid;
+  gap: 0.75rem;
+}
+
+.portrait-card {
+  position: relative;
+  min-height: 270px;
+  border: 0.5px solid var(--line);
+  border-radius: 14px;
+  background: var(--surface);
+  overflow: hidden;
+}
+
+.portrait-card img {
+  width: 100%;
+  height: 100%;
+  min-height: inherit;
+  display: block;
+  object-fit: cover;
+  object-position: center;
+  filter: saturate(0.94) contrast(1.02);
+  transform: scale(1.01);
+}
+
+.portrait-card::after {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(
+    180deg,
+    rgba(250, 248, 245, 0) 42%,
+    rgba(26, 26, 26, 0.16)
+  );
+  content: "";
+  pointer-events: none;
+}
+
+.review-grid {
+  display: grid;
+  gap: 0.75rem;
+}
+
+.review-card,
+.review-pullquote {
+  border: 0.5px solid var(--line);
+  border-radius: 12px;
+  background: var(--surface);
+}
+
+.review-card {
+  min-height: 150px;
+  display: grid;
+  align-items: end;
+  padding: 1rem;
+}
+
+.review-card p {
+  color: var(--text);
+  font-family: Fraunces, Georgia, serif;
+  font-size: clamp(1.35rem, 6vw, 2rem);
+  font-weight: 650;
+  line-height: 1.05;
+}
+
+.review-pullquote {
+  margin: 0;
+  color: var(--accent);
+  font-family: Fraunces, Georgia, serif;
+  font-size: clamp(2rem, 9vw, 4rem);
+  font-weight: 650;
+  line-height: 0.98;
+  padding: 1.1rem;
+}
+
+.reveal {
+  opacity: 0;
+  transform: translateY(22px);
+  transition:
+    opacity 700ms ease,
+    transform 700ms ease;
+}
+
+.reveal.is-visible {
+  opacity: 1;
+  transform: translateY(0);
+}
+
 .feature-grid article,
 .steps-list div,
 .faq-list details {
@@ -885,6 +974,49 @@ h1 span {
   .result-preview-grid {
     grid-template-columns: 1.4fr repeat(3, minmax(0, 0.72fr));
     align-items: stretch;
+  }
+
+  .portrait-section {
+    grid-template-columns: minmax(0, 0.72fr) minmax(0, 1.28fr);
+    align-items: start;
+    gap: 2rem;
+  }
+
+  .portrait-section .section-heading {
+    position: sticky;
+    top: 2rem;
+  }
+
+  .portrait-grid {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    grid-auto-rows: 180px;
+  }
+
+  .portrait-card {
+    min-height: 0;
+  }
+
+  .portrait-card-large {
+    grid-column: span 2;
+    grid-row: span 2;
+  }
+
+  .portrait-card-tall {
+    grid-column: span 2;
+  }
+
+  .review-section {
+    grid-template-columns: minmax(0, 0.72fr) minmax(0, 1.28fr);
+    gap: 2rem;
+  }
+
+  .review-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .review-pullquote {
+    grid-column: 1 / -1;
+    padding: 1.4rem;
   }
 
   .steps-list {
