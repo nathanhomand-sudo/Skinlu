@@ -2,9 +2,16 @@
 
 /* eslint-disable @next/next/no-img-element */
 
-import { ChangeEvent, FormEvent, useCallback, useEffect, useMemo, useState } from "react";
-import type { Concern } from "@/lib/skin-diagnostic";
+import {
+  ChangeEvent,
+  FormEvent,
+  useCallback,
+  useEffect,
+  useMemo,
+  useState,
+} from "react";
 import type { Product } from "@/lib/matching";
+import type { Concern } from "@/lib/skin-diagnostic";
 import type { SkinType } from "@/lib/visual-age";
 
 const ACCEPTED_TYPES = ["image/jpeg", "image/png", "image/webp"];
@@ -92,8 +99,8 @@ function ProductList({ products }: { products: Product[] }) {
   if (products.length === 0) {
     return (
       <p className="empty-routine">
-        Aucun produit disponible pour l&apos;instant. Ajoutez le catalogue produits
-        dans Supabase pour activer les recommandations.
+        Aucun produit disponible pour l&apos;instant. Ajoutez le catalogue
+        produits dans Supabase pour activer les recommandations.
       </p>
     );
   }
@@ -109,7 +116,9 @@ function ProductList({ products }: { products: Product[] }) {
             <span>{product.brand}</span>
             <strong>{product.name}</strong>
             <small>
-              {product.price_eur ? `${product.price_eur.toFixed(2)} EUR` : "Prix a verifier"}
+              {product.price_eur
+                ? `${product.price_eur.toFixed(2)} EUR`
+                : "Prix à vérifier"}
             </small>
           </div>
           <a href={product.affiliate_url} target="_blank" rel="noreferrer">
@@ -222,7 +231,10 @@ export default function Home() {
 
     try {
       const controller = new AbortController();
-      const timeoutId = window.setTimeout(() => controller.abort(), ANALYSIS_TIMEOUT_MS);
+      const timeoutId = window.setTimeout(
+        () => controller.abort(),
+        ANALYSIS_TIMEOUT_MS,
+      );
       const response = await fetch("/api/skin-context", {
         method: "POST",
         body,
@@ -337,207 +349,330 @@ export default function Home() {
   }, [unlockReport]);
 
   return (
-    <main className={`app-shell ${diagnostic ? "has-result" : ""}`}>
-      <section className="hero-panel" aria-labelledby="product-title">
-        <div className="eyebrow">Analyse gratuite par selfie</div>
-        <h1 id="product-title">Skinlu<span>.</span></h1>
-        <p className="hero-benefit">Découvre ce dont ta peau a vraiment besoin.</p>
-        <p className="lead">
-          Un selfie suffit. Notre IA repère tes préoccupations cutanées et te
-          construit une routine soin sur mesure, avec des produits multi-marques.
-        </p>
-        <div className="trust-strip" aria-label="Points cles Skinlu">
-          <span>Aperçu gratuit</span>
-          <span>Routine AM/PM</span>
-          <span>Produits FR</span>
+    <main className={`site-shell ${diagnostic ? "has-result" : ""}`}>
+      <section className="hero-section" aria-labelledby="product-title">
+        <div className="hero-copy">
+          <div className="eyebrow">Analyse gratuite par selfie</div>
+          <h1 id="product-title">
+            Skinlu<span>.</span>
+          </h1>
+          <p className="hero-benefit">
+            Découvre ce dont ta peau a vraiment besoin.
+          </p>
+          <p className="lead">
+            Un selfie suffit. Notre IA repère tes préoccupations cutanées et te
+            construit une routine soin sur mesure, avec des produits
+            multi-marques.
+          </p>
+          <div className="trust-strip" aria-label="Points clés Skinlu">
+            <span>Aperçu gratuit</span>
+            <span>Routine AM/PM</span>
+            <span>Produits FR</span>
+          </div>
         </div>
 
-        <div className="mock-analysis" aria-label="Exemple de diagnostic Skinlu">
-          <div className="mock-readout">
-            <strong>Exemple d&apos;analyse</strong>
-            <div>
-              <span>Hydratation</span>
-              <b>Faible</b>
+        <div className="hero-visual" aria-label="Aperçu Skinlu">
+          <div className="phone-frame">
+            <div className="phone-topbar">
+              <span>Skinlu</span>
+              <b>IA</b>
             </div>
-            <div>
-              <span>Pores visibles</span>
-              <b>Modéré</b>
+            <div className="phone-score">
+              <small>Priorité peau</small>
+              <strong>Déshydratation</strong>
             </div>
-            <div>
-              <span>Sensibilite</span>
-              <b>Élevée</b>
+            <div className="phone-metrics">
+              <div>
+                <span>Hydratation</span>
+                <b>Faible</b>
+              </div>
+              <div>
+                <span>Pores visibles</span>
+                <b>Modéré</b>
+              </div>
+              <div>
+                <span>Sensibilité</span>
+                <b>Élevée</b>
+              </div>
+            </div>
+            <div className="phone-routine">
+              <span>Routine proposée</span>
+              <b>Cleanser · Sérum · SPF</b>
             </div>
           </div>
         </div>
       </section>
 
-      <section className="upload-panel" aria-label="Diagnostic de peau">
-        <div className="panel-heading">
-          <span>Selfie peau</span>
-          <strong>4 MB max</strong>
+      <section className="conversion-section" aria-label="Diagnostic de peau">
+        <div className="section-heading">
+          <span className="eyebrow">Commencer</span>
+          <h2>Ton analyse gratuite en 30 secondes.</h2>
         </div>
 
-        <form onSubmit={handleSubmit} className="upload-form">
-          <div className="selfie-picker">
-            {previewUrl ? (
-              <label className="drop-zone has-preview">
-                <input
-                  type="file"
-                  name="selfie"
-                  accept="image/*"
-                  onChange={handleSelfieChange}
-                />
-                <img src={previewUrl} alt="Preview du selfie" className="photo-preview" />
-              </label>
-            ) : (
-              <label className="drop-zone">
-                <input
-                  type="file"
-                  name="selfie"
-                  accept="image/*"
-                  onChange={handleSelfieChange}
-                />
-                <span className="drop-zone-empty">
-                  <strong>Ajouter une photo</strong>
-                  <span>{helperText}</span>
-                </span>
-              </label>
-            )}
+        <div className="upload-panel">
+          <div className="panel-heading">
+            <span>Selfie peau</span>
+            <strong>4 MB max</strong>
           </div>
 
-          {previewUrl && selfie ? <p className="file-meta">{formatBytes(selfie.size)}</p> : null}
-
-          <p className="upload-reassurance">
-            Ton selfie est analysé puis supprimé. Jamais stocké.
-          </p>
-
-          <fieldset className="skin-type-fieldset">
-            <legend>Type de peau ressenti</legend>
-            <div className="skin-type-grid">
-              {SKIN_TYPES.map((option) => (
-                <label
-                  className={`skin-type-option ${
-                    skinType === option.value ? "is-selected" : ""
-                  }`}
-                  key={option.value}
-                >
+          <form onSubmit={handleSubmit} className="upload-form">
+            <div className="selfie-picker">
+              {previewUrl ? (
+                <label className="drop-zone has-preview">
                   <input
-                    type="radio"
-                    name="skin_type"
-                    value={option.value}
-                    checked={skinType === option.value}
-                    onChange={() => handleSkinTypeChange(option.value)}
+                    type="file"
+                    name="selfie"
+                    accept="image/*"
+                    onChange={handleSelfieChange}
                   />
-                  <span>{option.label}</span>
+                  <img
+                    src={previewUrl}
+                    alt="Preview du selfie"
+                    className="photo-preview"
+                  />
                 </label>
-              ))}
-            </div>
-          </fieldset>
-
-          {error ? <p className="form-error">{error}</p> : null}
-
-          <button className="analyze-button" type="submit" disabled={loading}>
-            {loading ? "Diagnostic en cours..." : "Voir mon analyse gratuite"}
-          </button>
-          <p className="cta-microcopy">Gratuit - Résultat en 30 secondes</p>
-        </form>
-
-        {loading ? (
-          <div className="status-box" role="status" aria-live="polite">
-            <div className="skeleton-line wide" />
-            <div className="skeleton-line" />
-            <div className="skeleton-line short" />
-          </div>
-        ) : null}
-
-        {diagnostic ? (
-          <div className="result-panel" role="status" aria-live="polite">
-            <span className="status-label">Aperçu gratuit</span>
-            <div className="diagnostic-summary">
-              <h2>{concernLabel(diagnostic.top_priority)}</h2>
-              <p>{diagnostic.summary}</p>
+              ) : (
+                <label className="drop-zone">
+                  <input
+                    type="file"
+                    name="selfie"
+                    accept="image/*"
+                    onChange={handleSelfieChange}
+                  />
+                  <span className="drop-zone-empty">
+                    <strong>Ajouter une photo</strong>
+                    <span>{helperText}</span>
+                  </span>
+                </label>
+              )}
             </div>
 
-            <div className="concern-list">
-              {diagnostic.concerns.map((concern) => (
-                <span key={concern}>{concernLabel(concern)}</span>
-              ))}
-            </div>
+            {previewUrl && selfie ? (
+              <p className="file-meta">{formatBytes(selfie.size)}</p>
+            ) : null}
 
-            <div className="locked-section" aria-label="Routine complète masquée">
-              <div className="locked-header">
-                <span>Routine complète AM/PM</span>
-                <strong>Verrouillée</strong>
-              </div>
-              <div className="paywall-teasers" aria-label="Aperçu du rapport">
-                <span>Routine matin</span>
-                <span>Routine soir</span>
-                <span>Produits multi-marques</span>
-                <span>Liens affiliés</span>
-              </div>
-            </div>
-
-            <label className="email-field unlock-email">
-              <span>Email pour recevoir ta routine</span>
-              <input
-                type="email"
-                value={email}
-                onChange={(event) => setEmail(event.target.value)}
-                placeholder="vous@email.com"
-              />
-            </label>
-
-            <button
-              className="stripe-button"
-              type="button"
-              onClick={startCheckout}
-              disabled={checkoutLoading}
-            >
-              {checkoutLoading
-                ? "Ouverture de Stripe..."
-                : "Débloquer ma routine complète - 9,99 EUR"}
-            </button>
-            <p className="paywall-note">
-              Le paiement debloque la routine AM/PM et les produits recommandes.
-              Les recommandations dependent du catalogue produits ajoute dans
-              Supabase.
+            <p className="upload-reassurance">
+              Ton selfie est analysé puis supprimé. Jamais stocké.
             </p>
 
-            {reportLoading ? (
-              <div className="status-box" role="status" aria-live="polite">
-                <div className="skeleton-line wide" />
-                <div className="skeleton-line" />
-                <div className="skeleton-line short" />
+            <fieldset className="skin-type-fieldset">
+              <legend>Type de peau ressenti</legend>
+              <div className="skin-type-grid">
+                {SKIN_TYPES.map((option) => (
+                  <label
+                    className={`skin-type-option ${
+                      skinType === option.value ? "is-selected" : ""
+                    }`}
+                    key={option.value}
+                  >
+                    <input
+                      type="radio"
+                      name="skin_type"
+                      value={option.value}
+                      checked={skinType === option.value}
+                      onChange={() => handleSkinTypeChange(option.value)}
+                    />
+                    <span>{option.label}</span>
+                  </label>
+                ))}
               </div>
-            ) : null}
+            </fieldset>
 
-            {routine ? (
-              <section className="full-report" aria-label="Routine complète">
-                <div className="report-heading">
-                  <span>Routine complète</span>
-                  <strong>Débloquée</strong>
+            {error ? <p className="form-error">{error}</p> : null}
+
+            <button className="analyze-button" type="submit" disabled={loading}>
+              {loading ? "Diagnostic en cours..." : "Voir mon analyse gratuite"}
+            </button>
+            <p className="cta-microcopy">Gratuit · Résultat en 30 secondes</p>
+          </form>
+
+          {loading ? (
+            <div className="status-box" role="status" aria-live="polite">
+              <div className="skeleton-line wide" />
+              <div className="skeleton-line" />
+              <div className="skeleton-line short" />
+            </div>
+          ) : null}
+
+          {diagnostic ? (
+            <div className="result-panel" role="status" aria-live="polite">
+              <span className="status-label">Aperçu gratuit</span>
+              <div className="diagnostic-summary">
+                <h2>{concernLabel(diagnostic.top_priority)}</h2>
+                <p>{diagnostic.summary}</p>
+              </div>
+
+              <div className="concern-list">
+                {diagnostic.concerns.map((concern) => (
+                  <span key={concern}>{concernLabel(concern)}</span>
+                ))}
+              </div>
+
+              <div className="locked-section" aria-label="Routine complète masquée">
+                <div className="locked-header">
+                  <span>Routine complète AM/PM</span>
+                  <strong>Verrouillée</strong>
                 </div>
+                <div className="paywall-teasers" aria-label="Aperçu du rapport">
+                  <span>Routine matin</span>
+                  <span>Routine soir</span>
+                  <span>Produits multi-marques</span>
+                  <span>Liens affiliés</span>
+                </div>
+              </div>
 
-                <section className="compatibility-card">
-                  <h2>Priorite</h2>
-                  <p>{concernLabel(routine.top_priority)}</p>
+              <label className="email-field unlock-email">
+                <span>Email pour recevoir ta routine</span>
+                <input
+                  type="email"
+                  value={email}
+                  onChange={(event) => setEmail(event.target.value)}
+                  placeholder="vous@email.com"
+                />
+              </label>
+
+              <button
+                className="stripe-button"
+                type="button"
+                onClick={startCheckout}
+                disabled={checkoutLoading}
+              >
+                {checkoutLoading
+                  ? "Ouverture de Stripe..."
+                  : "Débloquer ma routine complète - 9,99 EUR"}
+              </button>
+              <p className="paywall-note">
+                Le paiement débloque la routine AM/PM et les produits
+                recommandés. Les recommandations dépendent du catalogue produits
+                ajouté dans Supabase.
+              </p>
+
+              {reportLoading ? (
+                <div className="status-box" role="status" aria-live="polite">
+                  <div className="skeleton-line wide" />
+                  <div className="skeleton-line" />
+                  <div className="skeleton-line short" />
+                </div>
+              ) : null}
+
+              {routine ? (
+                <section className="full-report" aria-label="Routine complète">
+                  <div className="report-heading">
+                    <span>Routine complète</span>
+                    <strong>Débloquée</strong>
+                  </div>
+
+                  <section className="compatibility-card">
+                    <h2>Priorité</h2>
+                    <p>{concernLabel(routine.top_priority)}</p>
+                  </section>
+
+                  <section className="routine-block">
+                    <h2>Matin</h2>
+                    <ProductList products={routine.morning} />
+                  </section>
+
+                  <section className="routine-block">
+                    <h2>Soir</h2>
+                    <ProductList products={routine.evening} />
+                  </section>
+
+                  <p className="medical-disclaimer">{routine.disclaimer}</p>
                 </section>
+              ) : null}
+            </div>
+          ) : null}
+        </div>
+      </section>
 
-                <section className="routine-block">
-                  <h2>Matin</h2>
-                  <ProductList products={routine.morning} />
-                </section>
+      <section className="product-section">
+        <div className="section-heading">
+          <span className="eyebrow">Ce que tu reçois</span>
+          <h2>Un diagnostic lisible, puis une routine à appliquer.</h2>
+        </div>
+        <div className="feature-grid">
+          <article>
+            <span>01</span>
+            <h3>Priorité peau</h3>
+            <p>
+              Skinlu met en avant le sujet à traiter en premier : hydratation,
+              pores, sensibilité, taches ou imperfections.
+            </p>
+          </article>
+          <article>
+            <span>02</span>
+            <h3>Routine AM/PM</h3>
+            <p>
+              Une routine matin et soir, structurée par étapes, pour éviter les
+              achats dispersés et les doublons.
+            </p>
+          </article>
+          <article>
+            <span>03</span>
+            <h3>Produits multi-marques</h3>
+            <p>
+              Des recommandations parmi des marques connues, sélectionnées selon
+              ton type de peau et tes préoccupations.
+            </p>
+          </article>
+        </div>
+      </section>
 
-                <section className="routine-block">
-                  <h2>Soir</h2>
-                  <ProductList products={routine.evening} />
-                </section>
-
-                <p className="medical-disclaimer">{routine.disclaimer}</p>
-              </section>
-            ) : null}
+      <section className="steps-section">
+        <div className="section-heading">
+          <span className="eyebrow">Comment ça marche</span>
+          <h2>Simple comme un selfie.</h2>
+        </div>
+        <div className="steps-list">
+          <div>
+            <b>1</b>
+            <span>Ajoute une photo nette de ton visage.</span>
           </div>
-        ) : null}
+          <div>
+            <b>2</b>
+            <span>Choisis ton type de peau ressenti.</span>
+          </div>
+          <div>
+            <b>3</b>
+            <span>Lis ton aperçu gratuit, puis débloque la routine complète.</span>
+          </div>
+        </div>
+      </section>
+
+      <section className="faq-section">
+        <div className="section-heading">
+          <span className="eyebrow">Questions fréquentes</span>
+          <h2>Avant d’uploader ton selfie.</h2>
+        </div>
+        <div className="faq-list">
+          <details open>
+            <summary>Est-ce que mon selfie est stocké ?</summary>
+            <p>
+              Non. Il sert à générer l’analyse et n’est pas conservé comme
+              fichier par Skinlu.
+            </p>
+          </details>
+          <details>
+            <summary>Est-ce un diagnostic médical ?</summary>
+            <p>
+              Non. Skinlu fournit une lecture cosmétique informative, pas un avis
+              médical ou dermatologique.
+            </p>
+          </details>
+          <details>
+            <summary>Comment les produits sont-ils choisis ?</summary>
+            <p>
+              La routine s’appuie sur ton type de peau, tes préoccupations et le
+              catalogue multi-marques renseigné dans Skinlu.
+            </p>
+          </details>
+        </div>
+      </section>
+
+      <section className="final-cta">
+        <span className="eyebrow">Prête ?</span>
+        <h2>Commence par ton analyse gratuite.</h2>
+        <a href="#product-title">Voir mon analyse gratuite</a>
       </section>
 
       <footer className="site-footer">
@@ -545,9 +680,11 @@ export default function Home() {
           Analyse cosmétique informative. Skinlu ne fournit pas de diagnostic
           médical ou dermatologique.
         </p>
-        <nav aria-label="Liens legaux">
+        <nav aria-label="Liens légaux">
           <a href="/mentions-legales">Mentions légales</a>
-          <a href="/politique-de-confidentialite">Politique de confidentialité</a>
+          <a href="/politique-de-confidentialite">
+            Politique de confidentialité
+          </a>
         </nav>
       </footer>
     </main>
