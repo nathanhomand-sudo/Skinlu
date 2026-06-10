@@ -187,11 +187,15 @@ function PhotoCarousel() {
 }
 
 function UrgencyCounter() {
-  const [count] = useState(() => Math.floor(Math.random() * 80) + 60);
+  const count = useMemo(() => {
+    // Deterministic: grows ~8/day from the 1st of the current month — same for all users the same day
+    const dayOfMonth = new Date().getDate();
+    return 180 + dayOfMonth * 8;
+  }, []);
   return (
     <p className="urgency-line">
       <span className="urgency-dot" />
-      {count} diagnostics réalisés aujourd&apos;hui
+      {count} diagnostics ce mois-ci
     </p>
   );
 }
@@ -217,9 +221,19 @@ export default function Home() {
 
   useEffect(() => {
     return () => {
-      if (previewUrl) URL.revokeObjectURL(previewUrl);
+      if (previewUrl?.startsWith('blob:')) URL.revokeObjectURL(previewUrl);
     };
   }, [previewUrl]);
+
+  // Lock body scroll while AI is analysing
+  useEffect(() => {
+    if (loading) {
+      document.body.style.overflow = 'hidden';
+    } else {
+      document.body.style.overflow = '';
+    }
+    return () => { document.body.style.overflow = ''; };
+  }, [loading]);
 
   useEffect(() => {
     const revealElements = document.querySelectorAll<HTMLElement>(".reveal");
@@ -257,12 +271,11 @@ export default function Home() {
       return;
     }
 
-    const nextPreviewUrl = URL.createObjectURL(nextFile);
     setSelfie(nextFile);
-    setPreviewUrl((cur) => {
-      if (cur) URL.revokeObjectURL(cur);
-      return nextPreviewUrl;
-    });
+    // Use FileReader (data URL) — more reliable than createObjectURL on iOS Safari
+    const reader = new FileReader();
+    reader.onload = (e) => setPreviewUrl(e.target?.result as string ?? null);
+    reader.readAsDataURL(nextFile);
   }
 
   function handleSkinTypeChange(nextSkinType: SkinType) {
@@ -360,6 +373,21 @@ export default function Home() {
 
   return (
     <main className={`site-shell ${diagnostic ? "has-result" : ""}`}>
+
+      {/* ── ANALYSIS OVERLAY (full-screen, locks scroll) ─────────── */}
+      {loading && (
+        <div className="analysis-overlay" role="status" aria-live="polite" aria-label="Analyse en cours">
+          <div className="analysis-overlay-inner">
+            <span className="ao-logo">Skinlu</span>
+            <div className="ao-spinner-ring" />
+            <p className="ao-label">Analyse IA en cours…</p>
+            <div className="ao-progress-wrap">
+              <div className="ao-progress-fill" />
+            </div>
+            <p className="ao-sub">30 secondes · On analyse chaque détail</p>
+          </div>
+        </div>
+      )}
 
       {/* ── 1. HERO ──────────────────────────────────────────────── */}
       <section className="hero-section" aria-labelledby="product-title">
@@ -531,27 +559,16 @@ export default function Home() {
         <div className="container">
           <div className="section-heading section-heading--center reveal">
             <span className="eyebrow">Pourquoi Skinlu</span>
-            <h2>Pas un blog. Pas une pharmacie.</h2>
+            <h2>Ce que tu n&apos;auras nulle part ailleurs.</h2>
           </div>
-          <div className="compare-scroll">
           <div className="compare-table reveal">
             <div className="compare-col compare-col--muted">
-              <h3>Blog skincare</h3>
+              <h3>Les autres</h3>
               <ul>
                 <li className="compare-no">Diagnostic par photo</li>
-                <li className="compare-yes">Multi-marques couvertes</li>
+                <li className="compare-no">Multi-marques sans biais</li>
                 <li className="compare-no">Routine personnalisée</li>
-                <li className="compare-no">Résultat instantané</li>
-                <li className="compare-yes">Gratuit</li>
-              </ul>
-            </div>
-            <div className="compare-col compare-col--muted">
-              <h3>Pharmacie</h3>
-              <ul>
-                <li className="compare-no">Diagnostic par photo</li>
-                <li className="compare-no">Multi-marques (biais rayon)</li>
-                <li className="compare-yes">Conseil humain</li>
-                <li className="compare-no">30 secondes</li>
+                <li className="compare-no">Résultat en 30 secondes</li>
                 <li className="compare-no">Gratuit pour tester</li>
               </ul>
             </div>
@@ -559,13 +576,12 @@ export default function Home() {
               <h3>Skinlu</h3>
               <ul>
                 <li className="compare-yes">Diagnostic par photo</li>
-                <li className="compare-yes">Multi-marques</li>
+                <li className="compare-yes">Multi-marques sans biais</li>
                 <li className="compare-yes">Routine personnalisée</li>
-                <li className="compare-yes">30 secondes</li>
+                <li className="compare-yes">Résultat en 30 secondes</li>
                 <li className="compare-yes">Gratuit pour tester</li>
               </ul>
             </div>
-          </div>
           </div>
         </div>
       </section>
@@ -662,13 +678,6 @@ export default function Home() {
                   <p className="cta-microcopy">Gratuit · Résultat en 30 secondes</p>
                 </form>
 
-                {loading ? (
-                  <div className="diagnostic-spinner" role="status" aria-live="polite">
-                    <div className="spinner-ring" />
-                    <p className="spinner-label">Analyse IA en cours…</p>
-                    <p className="spinner-sub">30 secondes · On analyse chaque détail</p>
-                  </div>
-                ) : null}
 
                 {diagnostic ? (
                   <div className="result-panel" role="status" aria-live="polite">
