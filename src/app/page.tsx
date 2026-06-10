@@ -783,49 +783,33 @@ export default function Home() {
         </div>
       </section>
 
-      {/* ── 7. PORTRAIT GALLERY ─────────────────────────────────── */}
-      <section className="portrait-section" aria-label="Ambiance Skinlu">
+      {/* ── 7. IMMERSIVE BANNER ─────────────────────────────────── */}
+      <section className="immersive-section" aria-label="Ambiance Skinlu">
+        <div className="immersive-banner reveal">
+          <img
+            src="/faces/face-01.png"
+            alt=""
+            aria-hidden="true"
+            className="immersive-img"
+          />
+          <div className="immersive-overlay">
+            <div className="container">
+              <span className="eyebrow">Skin first</span>
+              <p className="immersive-tagline">
+                Une expérience pensée<br />
+                comme un éditorial beauté.
+              </p>
+            </div>
+          </div>
+        </div>
         <div className="container">
-          <div className="portrait-section-inner">
-
-            <div className="portrait-section-heading">
-              <div className="section-heading reveal">
-                <span className="eyebrow">Skin first</span>
-                <h2>Une expérience pensée comme un éditorial beauté.</h2>
-              </div>
+          <div className="accent-portraits">
+            <div className="accent-portrait reveal reveal-delay-1">
+              <img src="/faces/face-03.png" alt="" aria-hidden="true" />
             </div>
-
-            <div className="portrait-grid">
-              <article className="portrait-card portrait-card-large reveal">
-                <img
-                  src="/faces/face-01.png"
-                  alt=""
-                  aria-hidden="true"
-                />
-              </article>
-              <article className="portrait-card reveal reveal-delay-1">
-                <img
-                  src="/faces/face-03.png"
-                  alt=""
-                  aria-hidden="true"
-                />
-              </article>
-              <article className="portrait-card reveal reveal-delay-2">
-                <img
-                  src="/faces/face-04.png"
-                  alt=""
-                  aria-hidden="true"
-                />
-              </article>
-              <article className="portrait-card portrait-card-wide reveal reveal-delay-3">
-                <img
-                  src="/faces/face-02.png"
-                  alt=""
-                  aria-hidden="true"
-                />
-              </article>
+            <div className="accent-portrait reveal reveal-delay-2">
+              <img src="/faces/face-04.png" alt="" aria-hidden="true" />
             </div>
-
           </div>
         </div>
       </section>
