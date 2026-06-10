@@ -184,6 +184,16 @@ function PhotoCarousel() {
   );
 }
 
+function UrgencyCounter() {
+  const [count] = useState(() => Math.floor(Math.random() * 80) + 60);
+  return (
+    <p className="urgency-line">
+      <span className="urgency-dot" />
+      {count} diagnostics réalisés aujourd&apos;hui
+    </p>
+  );
+}
+
 export default function Home() {
   const [selfie, setSelfie] = useState<File | null>(null);
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
@@ -362,13 +372,13 @@ export default function Home() {
               <span className="hero-accent">besoin.</span>
             </p>
             <p className="lead">
-              Un selfie suffit. Notre IA repère tes préoccupations cutanées
-              et construit une routine sur mesure, produits multi-marques inclus.
+              Un selfie. 30 secondes. Une routine faite pour toi —{" "}
+              pas pour une peau générique.
             </p>
             <div className="trust-strip">
               <span>Aperçu gratuit</span>
               <span>Routine AM/PM</span>
-              <span>Produits FR</span>
+              <span>Sans CB</span>
             </div>
             <a href="#diagnostic" className="hero-cta">
               Voir mon analyse gratuite
@@ -426,9 +436,9 @@ export default function Home() {
               <span>diagnostics réalisés</span>
             </div>
             <div className="trust-pills">
-              <span>IA vision derma</span>
-              <span>Analyse en 30 sec</span>
-              <span>Aucune CB pour l&apos;aperçu</span>
+              <span>IA entraînée sur la peau</span>
+              <span>Résultat en 30 sec</span>
+              <span>Zéro CB requis</span>
             </div>
           </div>
         </div>
@@ -452,7 +462,7 @@ export default function Home() {
                 </div>
                 <div className="demo-step">
                   <b>03</b>
-                  <span>Reçois ta routine sur mesure</span>
+                  <span>Ta routine tombe. Produits inclus.</span>
                 </div>
               </div>
               <a href="#diagnostic" className="hero-cta">Commencer gratuitement</a>
@@ -502,11 +512,11 @@ export default function Home() {
         <div className="container split-container">
           <div className="split-copy reveal">
             <span className="eyebrow">Résultat immédiat</span>
-            <h2>Analyse IA<br />pour chaque<br />type de peau.</h2>
+            <h2>Ta peau a ses règles.<br />La routine aussi.</h2>
             <ul className="split-benefits">
-              <li>Priorité cutanée identifiée instantanément</li>
+              <li>Ta priorité peau, identifiée direct.</li>
               <li>Routine AM/PM structurée par étapes</li>
-              <li>Produits multi-marques adaptés à ton profil</li>
+              <li>CeraVe, Avène, La Roche-Posay… selon toi.</li>
             </ul>
             <a href="#diagnostic" className="hero-cta">
               Commencer gratuitement
@@ -514,6 +524,48 @@ export default function Home() {
           </div>
           <div className="split-phone reveal reveal-delay-1">
             <PhoneMockup />
+          </div>
+        </div>
+      </section>
+
+      {/* ── COMPARATIF ───────────────────────────────────────────── */}
+      <section className="compare-section">
+        <div className="container">
+          <div className="section-heading section-heading--center reveal">
+            <span className="eyebrow">Pourquoi Skinlu</span>
+            <h2>Pas un blog. Pas une pharmacie.</h2>
+          </div>
+          <div className="compare-table reveal">
+            <div className="compare-col compare-col--muted">
+              <h3>Blog skincare</h3>
+              <ul>
+                <li className="compare-no">Conseils génériques</li>
+                <li className="compare-no">Multi-marques</li>
+                <li className="compare-no">Personnalisé</li>
+                <li className="compare-no">30 secondes</li>
+                <li className="compare-no">Gratuit pour tester</li>
+              </ul>
+            </div>
+            <div className="compare-col compare-col--muted">
+              <h3>Pharmacie</h3>
+              <ul>
+                <li className="compare-no">Conseils génériques</li>
+                <li className="compare-no">Multi-marques</li>
+                <li className="compare-no">Personnalisé</li>
+                <li className="compare-no">30 secondes</li>
+                <li className="compare-no">Gratuit pour tester</li>
+              </ul>
+            </div>
+            <div className="compare-col compare-col--hero">
+              <h3>Skinlu</h3>
+              <ul>
+                <li className="compare-yes">Analyse de ta peau</li>
+                <li className="compare-yes">Multi-marques</li>
+                <li className="compare-yes">Personnalisé</li>
+                <li className="compare-yes">30 secondes</li>
+                <li className="compare-yes">Gratuit pour tester</li>
+              </ul>
+            </div>
           </div>
         </div>
       </section>
@@ -603,6 +655,7 @@ export default function Home() {
                     </div>
                   </fieldset>
                   {error ? <p className="form-error">{error}</p> : null}
+                  <UrgencyCounter />
                   <button className="analyze-button" type="submit" disabled={loading}>
                     {loading ? "Diagnostic en cours..." : "Voir mon analyse gratuite"}
                   </button>
@@ -641,6 +694,16 @@ export default function Home() {
                         <span>Liens affiliés</span>
                       </div>
                     </div>
+                    <div className="report-includes">
+                      <span className="eyebrow">Ce que tu débloques</span>
+                      <ul>
+                        <li>Routine matin complète, étape par étape</li>
+                        <li>Routine soir complète</li>
+                        <li>6 à 8 produits sélectionnés pour ton profil</li>
+                        <li>Pourquoi ces produits, expliqué par l&apos;IA</li>
+                        <li>Ingrédients à éviter selon ta peau</li>
+                      </ul>
+                    </div>
                     <label className="email-field unlock-email">
                       <span>Email pour recevoir ta routine</span>
                       <input
@@ -651,7 +714,7 @@ export default function Home() {
                       />
                     </label>
                     <button className="stripe-button" type="button" onClick={startCheckout} disabled={checkoutLoading}>
-                      {checkoutLoading ? "Ouverture de Stripe..." : "Débloquer ma routine complète · 9,99 EUR"}
+                      {checkoutLoading ? "Ouverture de Stripe..." : "Voir ma routine complète · 9,99 €"}
                     </button>
                     <p className="paywall-note">
                       Le paiement débloque la routine AM/PM et les produits recommandés.
@@ -700,8 +763,8 @@ export default function Home() {
             <div className="container">
               <span className="eyebrow">Skin first</span>
               <p className="immersive-tagline">
-                Une expérience pensée<br />
-                comme un éditorial beauté.
+                Pas de conseil générique.<br />
+                Une routine qui te ressemble.
               </p>
             </div>
           </div>
@@ -725,7 +788,7 @@ export default function Home() {
               </details>
               <details>
                 <summary>Est-ce un diagnostic médical&nbsp;?</summary>
-                <p>Non. Skinlu fournit une lecture cosmétique informative, pas un avis médical ou dermatologique.</p>
+                <p>Non. C&apos;est un outil beauté, pas un médecin. Pour les problèmes sérieux, consulte un dermatologue.</p>
               </details>
               <details>
                 <summary>Comment les produits sont-ils choisis&nbsp;?</summary>
@@ -741,7 +804,7 @@ export default function Home() {
         <div className="container">
           <div className="final-cta-inner reveal">
             <span className="eyebrow">Prête&nbsp;?</span>
-            <h2>Commence par ton analyse gratuite.</h2>
+            <h2>Lance-toi. C&apos;est gratuit.</h2>
             <a href="#diagnostic">Voir mon analyse gratuite</a>
           </div>
         </div>
