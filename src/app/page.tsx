@@ -533,6 +533,7 @@ export default function Home() {
             <span className="eyebrow">Pourquoi Skinlu</span>
             <h2>Pas un blog. Pas une pharmacie.</h2>
           </div>
+          <div className="compare-scroll">
           <div className="compare-table reveal">
             <div className="compare-col compare-col--muted">
               <h3>Blog skincare</h3>
@@ -564,6 +565,7 @@ export default function Home() {
                 <li className="compare-yes">Gratuit pour tester</li>
               </ul>
             </div>
+          </div>
           </div>
         </div>
       </section>
@@ -617,12 +619,12 @@ export default function Home() {
                   <div className="selfie-picker">
                     {previewUrl ? (
                       <label className="drop-zone has-preview">
-                        <input type="file" name="selfie" accept="image/*" onChange={handleSelfieChange} />
+                        <input type="file" name="selfie" accept="image/jpeg,image/png,image/webp" onChange={handleSelfieChange} />
                         <img src={previewUrl} alt="Preview du selfie" className="photo-preview" />
                       </label>
                     ) : (
                       <label className="drop-zone">
-                        <input type="file" name="selfie" accept="image/*" onChange={handleSelfieChange} />
+                        <input type="file" name="selfie" accept="image/jpeg,image/png,image/webp" onChange={handleSelfieChange} />
                         <span className="drop-zone-empty">
                           <strong>Ajouter une photo</strong>
                           <span>{helperText}</span>
@@ -661,10 +663,10 @@ export default function Home() {
                 </form>
 
                 {loading ? (
-                  <div className="status-box" role="status" aria-live="polite">
-                    <div className="skeleton-line wide" />
-                    <div className="skeleton-line" />
-                    <div className="skeleton-line short" />
+                  <div className="diagnostic-spinner" role="status" aria-live="polite">
+                    <div className="spinner-ring" />
+                    <p className="spinner-label">Analyse IA en cours…</p>
+                    <p className="spinner-sub">30 secondes · On analyse chaque détail</p>
                   </div>
                 ) : null}
 
@@ -718,10 +720,9 @@ export default function Home() {
                       Le paiement débloque la routine AM/PM et les produits recommandés.
                     </p>
                     {reportLoading ? (
-                      <div className="status-box" role="status" aria-live="polite">
-                        <div className="skeleton-line wide" />
-                        <div className="skeleton-line" />
-                        <div className="skeleton-line short" />
+                      <div className="diagnostic-spinner" role="status" aria-live="polite">
+                        <div className="spinner-ring" />
+                        <p className="spinner-label">Chargement de ta routine…</p>
                       </div>
                     ) : null}
                     {routine ? (

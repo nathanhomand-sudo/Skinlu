@@ -150,9 +150,11 @@ export default function RoutineClient({ token }: { token: string }) {
       <main className="routine-page">
         <Nav />
         <div className="routine-loading">
-          <div className="skeleton-line wide" />
-          <div className="skeleton-line" />
-          <div className="skeleton-line short" />
+          <div className="diagnostic-spinner" role="status">
+            <div className="spinner-ring" />
+            <p className="spinner-label">Chargement de ta routine…</p>
+            <p className="spinner-sub">Ta routine personnalisée arrive</p>
+          </div>
         </div>
       </main>
     );
