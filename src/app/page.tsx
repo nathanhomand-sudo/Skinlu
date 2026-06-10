@@ -146,40 +146,42 @@ function PhoneMockup() {
   );
 }
 
-/* ── Carousel 3D coverflow ────────────────────────────────────── */
+/* ── Carousel 3D cylinder ─────────────────────────────────────── */
 function PhotoCarousel() {
-  const faces = [
+  const baseImages = [
     "/faces/face-01.png",
     "/faces/face-02.png",
     "/faces/face-03.png",
   ];
-  const n = faces.length;
-  const [active, setActive] = useState(0);
+  // 6 slots: duplicate for a full cylinder
+  const faces = [...baseImages, ...baseImages];
+  const n = faces.length; // 6
+  const angleStep = 360 / n; // 60°
+  const radius = 260; // px
+
+  const [step, setStep] = useState(0);
 
   useEffect(() => {
-    const id = setInterval(() => setActive((a) => (a + 1) % n), 2800);
+    const id = setInterval(() => setStep((s) => s + 1), 2800);
     return () => clearInterval(id);
-  }, [n]);
+  }, []);
 
   return (
     <div className="carousel-3d" aria-hidden="true">
-      {faces.map((src, i) => {
-        let offset = i - active;
-        if (offset > n / 2) offset -= n;
-        if (offset < -n / 2) offset += n;
-        const abs = Math.abs(offset);
-        const style: React.CSSProperties = {
-          transform: `translateX(${offset * 255}px) rotateY(${offset * -28}deg) scale(${1 - abs * 0.16})`,
-          opacity: Math.max(0, 1 - abs * 0.38),
-          zIndex: 10 - abs,
-          transition: "transform 0.65s cubic-bezier(0.25, 0.1, 0.25, 1), opacity 0.65s ease",
-        };
-        return (
-          <div key={src} className="carousel-card" style={style}>
+      <div
+        className="carousel-cylinder"
+        style={{ transform: `rotateY(${-step * angleStep}deg)` }}
+      >
+        {faces.map((src, i) => (
+          <div
+            key={i}
+            className="carousel-card"
+            style={{ transform: `rotateY(${i * angleStep}deg) translateZ(${radius}px)` }}
+          >
             <img src={src} alt="" />
           </div>
-        );
-      })}
+        ))}
+      </div>
     </div>
   );
 }
@@ -388,7 +390,7 @@ export default function Home() {
           {/* Visual — portrait + floating cards UI */}
           <div className="hero-visual" aria-hidden="true">
             <div className="hero-portrait-wrap">
-              <img src="/faces/face-02.png" alt="" className="hero-face" />
+              <img src="/faces/hero-portrait.png" alt="" className="hero-face" />
               <div className="hero-portrait-gradient" />
             </div>
 
@@ -431,11 +433,8 @@ export default function Home() {
       <section className="trust-section" aria-label="Chiffres Skinlu">
         <div className="container">
           <div className="trust-bar">
-            <div className="trust-counter">
-              <strong>3 200</strong>
-              <span>diagnostics réalisés</span>
-            </div>
             <div className="trust-pills">
+              <span>3 200+ diagnostics réalisés</span>
               <span>IA entraînée sur la peau</span>
               <span>Résultat en 30 sec</span>
               <span>Zéro CB requis</span>
@@ -523,7 +522,7 @@ export default function Home() {
             </a>
           </div>
           <div className="split-phone reveal reveal-delay-1">
-            <PhoneMockup />
+            <img src="/skinlu-hero-lifestyle.png" alt="" className="split-lifestyle-img" />
           </div>
         </div>
       </section>
@@ -539,19 +538,19 @@ export default function Home() {
             <div className="compare-col compare-col--muted">
               <h3>Blog skincare</h3>
               <ul>
-                <li className="compare-no">Conseils génériques</li>
-                <li className="compare-no">Multi-marques</li>
-                <li className="compare-no">Personnalisé</li>
-                <li className="compare-no">30 secondes</li>
-                <li className="compare-no">Gratuit pour tester</li>
+                <li className="compare-no">Diagnostic par photo</li>
+                <li className="compare-yes">Multi-marques couvertes</li>
+                <li className="compare-no">Routine personnalisée</li>
+                <li className="compare-no">Résultat instantané</li>
+                <li className="compare-yes">Gratuit</li>
               </ul>
             </div>
             <div className="compare-col compare-col--muted">
               <h3>Pharmacie</h3>
               <ul>
-                <li className="compare-no">Conseils génériques</li>
-                <li className="compare-no">Multi-marques</li>
-                <li className="compare-no">Personnalisé</li>
+                <li className="compare-no">Diagnostic par photo</li>
+                <li className="compare-no">Multi-marques (biais rayon)</li>
+                <li className="compare-yes">Conseil humain</li>
                 <li className="compare-no">30 secondes</li>
                 <li className="compare-no">Gratuit pour tester</li>
               </ul>
@@ -559,9 +558,9 @@ export default function Home() {
             <div className="compare-col compare-col--hero">
               <h3>Skinlu</h3>
               <ul>
-                <li className="compare-yes">Analyse de ta peau</li>
+                <li className="compare-yes">Diagnostic par photo</li>
                 <li className="compare-yes">Multi-marques</li>
-                <li className="compare-yes">Personnalisé</li>
+                <li className="compare-yes">Routine personnalisée</li>
                 <li className="compare-yes">30 secondes</li>
                 <li className="compare-yes">Gratuit pour tester</li>
               </ul>
