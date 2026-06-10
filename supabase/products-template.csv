@@ -1,0 +1,31 @@
+name,brand,concerns,skin_types,product_type,routine_step,step_order,affiliate_url,image_url,price_eur
+"⚠ SUPPRIMER CETTE LIGNE AVANT IMPORT — concerns valides : acne|dehydration|dark_spots|aging|sensitivity|dullness|enlarged_pores — skin_types : dry|oily|combination|sensitive|normal — product_type : cleanser|serum|moisturizer|spf — routine_step : morning|evening|both — step_order : cleanser=10 / serum=30 / moisturizer=40 / spf=50","","{}","{}","","",0,"","",0
+"Hydrating Cleanser","CeraVe","{dehydration,sensitivity}","{dry,sensitive,normal}","cleanser","both",10,"https://www.amazon.fr/dp/B00D7BZJ3C?tag=skinlu-21","",10.99
+"Effaclar Gel Purifiant","La Roche-Posay","{acne,enlarged_pores}","{oily,combination,sensitive}","cleanser","both",10,"https://www.amazon.fr/dp/B003JSEGNC?tag=skinlu-21","",8.50
+"Sensibio H2O","Bioderma","{sensitivity,dehydration}","{sensitive,dry,normal}","cleanser","both",10,"https://www.amazon.fr/dp/B002XZLAWM?tag=skinlu-21","",14.90
+"Cleanance Gel Nettoyant","Avène","{acne,enlarged_pores}","{oily,combination,sensitive}","cleanser","both",10,"https://www.amazon.fr/dp/B08JGPSWTZ?tag=skinlu-21","",7.50
+"Foaming Facial Cleanser","CeraVe","{acne,enlarged_pores,dullness}","{oily,combination,normal}","cleanser","both",10,"https://www.amazon.fr/dp/B01N1BSR2J?tag=skinlu-21","",11.50
+"Toleriane Hydrating Gentle Cleanser","La Roche-Posay","{sensitivity,dehydration}","{sensitive,dry,normal}","cleanser","both",10,"https://www.amazon.fr/dp/B01N7T4KKQ?tag=skinlu-21","",13.90
+"Hyaluronic Acid 2% + B5","The Ordinary","{dehydration,dullness}","{dry,normal,combination,oily,sensitive}","serum","both",30,"https://www.amazon.fr/dp/B01MYEZPC8?tag=skinlu-21","",7.50
+"Niacinamide 10% + Zinc 1%","The Ordinary","{acne,enlarged_pores,dullness}","{oily,combination,normal}","serum","both",30,"https://www.amazon.fr/dp/B01MDTVZTZ?tag=skinlu-21","",6.30
+"Retinol B3 Serum","La Roche-Posay","{aging,dark_spots,dullness}","{normal,dry,combination}","serum","evening",30,"https://www.amazon.fr/dp/B07Z9Y4M3C?tag=skinlu-21","",28.00
+"2% BHA Liquid Exfoliant","Paula's Choice","{acne,enlarged_pores,dullness,dark_spots}","{oily,combination,normal}","serum","evening",30,"https://www.amazon.fr/dp/B00949CTQQ?tag=skinlu-21","",35.00
+"Sérum Vitamine C 10%","Typology","{dark_spots,dullness,aging}","{normal,combination,oily}","serum","morning",30,"https://www.amazon.fr/s?k=Typology+Serum+Vitamine+C&tag=skinlu-21","",25.00
+"Hyalu B5 Sérum","La Roche-Posay","{dehydration,sensitivity,aging}","{dry,sensitive,normal,combination}","serum","both",30,"https://www.amazon.fr/dp/B09B1FHV5D?tag=skinlu-21","",27.50
+"Crystal Retinal 3","Medik8","{aging,dark_spots,dullness}","{normal,dry,combination}","serum","evening",30,"https://www.amazon.fr/s?k=Medik8+Crystal+Retinal+3&tag=skinlu-21","",35.00
+"Lactic Acid 10% + HA","The Ordinary","{dullness,dark_spots,enlarged_pores}","{normal,dry,combination}","serum","evening",30,"https://www.amazon.fr/dp/B07NDNPCKW?tag=skinlu-21","",7.30
+"Ascorbyl Glucoside Solution 12%","The Ordinary","{dark_spots,dullness,aging}","{dry,normal,combination,sensitive}","serum","morning",30,"https://www.amazon.fr/dp/B01N9SPQHX?tag=skinlu-21","",10.50
+"Caffeine Solution 5% + EGCG","The Ordinary","{dullness,aging}","{dry,normal,combination,oily}","serum","both",35,"https://www.amazon.fr/dp/B07GLNN427?tag=skinlu-21","",7.30
+"Moisturizing Cream","CeraVe","{dehydration,sensitivity}","{dry,sensitive,normal}","moisturizer","both",40,"https://www.amazon.fr/dp/B0853C7CFQ?tag=skinlu-21","",12.50
+"Effaclar Mat","La Roche-Posay","{acne,enlarged_pores}","{oily,combination}","moisturizer","both",40,"https://www.amazon.fr/dp/B00EKDV674?tag=skinlu-21","",14.50
+"Cicaplast Baume B5+","La Roche-Posay","{sensitivity,dehydration}","{dry,sensitive,normal}","moisturizer","both",40,"https://www.amazon.fr/dp/B0060OUV5Y?tag=skinlu-21","",12.50
+"Hydro Boost Water Gel","Neutrogena","{dehydration,dullness}","{normal,combination,oily}","moisturizer","both",40,"https://www.amazon.fr/s?k=Neutrogena+Hydro+Boost+Water+Gel&tag=skinlu-21","",18.00
+"Hydrance Optimale Légère","Avène","{dehydration,sensitivity}","{normal,combination,sensitive}","moisturizer","both",40,"https://www.amazon.fr/s?k=Avene+Hydrance+Optimale+Legere&tag=skinlu-21","",15.00
+"Toleriane Ultra","La Roche-Posay","{sensitivity,dehydration}","{sensitive,dry}","moisturizer","both",40,"https://www.amazon.fr/dp/B00ES7DQIU?tag=skinlu-21","",17.50
+"Normaderm Phytosolution","Vichy","{acne,enlarged_pores,dullness}","{oily,combination}","moisturizer","both",40,"https://www.amazon.fr/dp/B089MJTPBL?tag=skinlu-21","",14.90
+"PM Facial Moisturizing Lotion","CeraVe","{dehydration,aging}","{dry,normal,sensitive,combination}","moisturizer","evening",40,"https://www.amazon.fr/dp/B000YJ2SLG?tag=skinlu-21","",13.00
+"Anthelios UVMune 400 Invisible Fluid SPF 50+","La Roche-Posay","{dark_spots,aging,sensitivity}","{dry,normal,combination,oily,sensitive}","spf","morning",50,"https://www.amazon.fr/dp/B09SLDHKTN?tag=skinlu-21","",16.50
+"Cleanance Solaire SPF 50+","Avène","{acne,dark_spots,enlarged_pores}","{oily,combination,sensitive}","spf","morning",50,"https://www.amazon.fr/s?k=Avene+Cleanance+Solaire+SPF+50&tag=skinlu-21","",14.00
+"SPF 50 Fluide Quotidien","Typology","{dark_spots,aging,dullness}","{normal,combination,dry}","spf","morning",50,"https://www.amazon.fr/s?k=Typology+SPF+50+Quotidien&tag=skinlu-21","",19.00
+"Mineral SPF 50+ Tinted","CeraVe","{dark_spots,sensitivity,dehydration}","{dry,normal,combination,sensitive}","spf","morning",50,"https://www.amazon.fr/s?k=CeraVe+Mineral+SPF+50+Tinted&tag=skinlu-21","",18.00
+"Photoderm AR Crème Teintée SPF 50+","Bioderma","{sensitivity,acne,dark_spots}","{sensitive,dry,normal}","spf","morning",50,"https://www.amazon.fr/s?k=Bioderma+Photoderm+AR+Teintee&tag=skinlu-21","",15.50
