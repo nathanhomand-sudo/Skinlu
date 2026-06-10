@@ -319,10 +319,28 @@ h1 span { color: var(--accent); }
   background: rgba(201,150,122,.07);
 }
 
-/* Float cards hidden on mobile so portrait is unobstructed */
+/* Float cards — smaller on mobile, not covering face center */
 @media (max-width: 759px) {
-  .hero-float-top,
-  .hero-float-diag { display: none; }
+  .hero-float-top {
+    left: -0.25rem;
+    top: 0.75rem;
+    padding: 0.4rem 0.6rem;
+    min-width: 100px;
+  }
+  .hero-float-top span { font-size: 0.52rem; }
+  .hero-float-top strong { font-size: 0.7rem; }
+
+  .hero-float-diag {
+    right: -0.25rem;
+    bottom: -0.5rem;
+    padding: 0.6rem 0.7rem;
+    width: min(58%, 170px);
+    gap: 0.4rem;
+  }
+  .hero-float-diag .hfd-priority strong { font-size: 1rem; }
+  .hero-float-diag .hfd-metrics { gap: 0.22rem; }
+  .hero-float-diag .hfd-routine,
+  .hero-float-diag .hfd-recommend { display: none; }
 }
 
 /* ─── 2. TRUST BAR ───────────────────────────────────────────── */

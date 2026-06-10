@@ -6,7 +6,6 @@ import {
   skinDiagnosticJsonSchema,
 } from "@/lib/skin-diagnostic";
 import { getSupabaseAdmin } from "@/lib/supabase";
-import { skinTypeSchema } from "@/lib/visual-age";
 
 const ACCEPTED_TYPES = new Set(["image/jpeg", "image/png", "image/webp"]);
 const MAX_FILE_SIZE = 4 * 1024 * 1024;
@@ -43,17 +42,10 @@ export async function POST(request: Request) {
   }
 
   const selfie = formData.get("selfie");
-  const skinTypeInput = formData.get("skin_type");
   const emailInput = formData.get("email");
 
   if (!(selfie instanceof File)) {
     return jsonError("selfie_required", 400);
-  }
-
-  const skinType = skinTypeSchema.safeParse(skinTypeInput);
-
-  if (!skinType.success) {
-    return jsonError("skin_type_required", 400);
   }
 
   if (!ACCEPTED_TYPES.has(selfie.type)) {
@@ -83,7 +75,7 @@ export async function POST(request: Request) {
             content: [
               {
                 type: "input_text",
-                text: buildSkinDiagnosticPrompt(skinType.data),
+                text: buildSkinDiagnosticPrompt(),
               },
               {
                 type: "input_image",
@@ -105,6 +97,11 @@ export async function POST(request: Request) {
     );
 
     const diagnostic = parseSkinDiagnostic(response.output_text);
+
+    if (!diagnostic.face_detected) {
+      return jsonError("no_face_detected", 400);
+    }
+
     const sessionToken = crypto.randomUUID();
     const email =
       typeof emailInput === "string" && emailInput.trim()

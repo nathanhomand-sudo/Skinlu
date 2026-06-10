@@ -19,13 +19,6 @@ const MAX_FILE_SIZE = 4 * 1024 * 1024;
 const ANALYSIS_TIMEOUT_MS = 70_000;
 const DIAGNOSTIC_STORAGE_KEY = "skinlu:last-diagnostic";
 
-const SKIN_TYPES: { value: SkinType; label: string }[] = [
-  { value: "dry", label: "Sèche" },
-  { value: "oily", label: "Grasse" },
-  { value: "combination", label: "Mixte" },
-  { value: "sensitive", label: "Sensible" },
-  { value: "normal", label: "Normale" },
-];
 
 const CONCERN_LABELS: Record<Concern, string> = {
   acne: "Imperfections",
@@ -203,7 +196,6 @@ function UrgencyCounter() {
 export default function Home() {
   const [selfie, setSelfie] = useState<File | null>(null);
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
-  const [skinType, setSkinType] = useState<SkinType>("sensitive");
   const [email, setEmail] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
@@ -278,22 +270,14 @@ export default function Home() {
     reader.readAsDataURL(nextFile);
   }
 
-  function handleSkinTypeChange(nextSkinType: SkinType) {
-    setSkinType(nextSkinType);
-    setDiagnostic(null);
-    clearPaidState();
-    window.localStorage.removeItem(DIAGNOSTIC_STORAGE_KEY);
-  }
-
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
-    if (!selfie) { setError("Ajoutez un selfie avant de lancer le diagnostic."); return; }
+    if (!selfie) { setError("Ajoute ton selfie avant de lancer le diagnostic."); return; }
     const validationError = validateFile(selfie);
     if (validationError) { setError(validationError); return; }
 
     const body = new FormData();
     body.append("selfie", selfie);
-    body.append("skin_type", skinType);
     if (email.trim()) body.append("email", email.trim());
 
     setLoading(true); setError(null); setDiagnostic(null); clearPaidState();
@@ -306,8 +290,10 @@ export default function Home() {
       const data = await response.json();
       if (!response.ok) {
         throw new Error(
-          data.error === "service_timeout"
-            ? "Le diagnostic met trop de temps. Réessayez avec une photo plus nette."
+          data.error === "no_face_detected"
+            ? "Aucun visage détecté. Prends un selfie bien cadré, visage visible et bien éclairé."
+            : data.error === "service_timeout"
+            ? "Le diagnostic prend trop de temps. Réessaie avec une photo plus nette."
             : data.error ?? "Le diagnostic n'a pas pu démarrer.",
         );
       }
@@ -650,26 +636,6 @@ export default function Home() {
                   </div>
                   {previewUrl && selfie ? <p className="file-meta">{formatBytes(selfie.size)}</p> : null}
                   <p className="upload-reassurance">Ton selfie est analysé puis supprimé. Jamais stocké.</p>
-                  <fieldset className="skin-type-fieldset">
-                    <legend>Type de peau ressenti</legend>
-                    <div className="skin-type-grid">
-                      {SKIN_TYPES.map((option) => (
-                        <label
-                          className={`skin-type-option ${skinType === option.value ? "is-selected" : ""}`}
-                          key={option.value}
-                        >
-                          <input
-                            type="radio"
-                            name="skin_type"
-                            value={option.value}
-                            checked={skinType === option.value}
-                            onChange={() => handleSkinTypeChange(option.value)}
-                          />
-                          <span>{option.label}</span>
-                        </label>
-                      ))}
-                    </div>
-                  </fieldset>
                   {error ? <p className="form-error">{error}</p> : null}
                   <UrgencyCounter />
                   <button className="analyze-button" type="submit" disabled={loading}>
