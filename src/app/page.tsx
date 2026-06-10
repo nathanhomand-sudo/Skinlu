@@ -57,16 +57,9 @@ type RoutineReport = {
 };
 
 function getStoredDiagnostic() {
-  if (typeof window === "undefined") {
-    return null;
-  }
-
+  if (typeof window === "undefined") return null;
   const stored = window.localStorage.getItem(DIAGNOSTIC_STORAGE_KEY);
-
-  if (!stored) {
-    return null;
-  }
-
+  if (!stored) return null;
   try {
     return JSON.parse(stored) as DiagnosticPreview;
   } catch {
@@ -80,14 +73,10 @@ function formatBytes(bytes: number) {
 }
 
 function validateFile(file: File) {
-  if (!ACCEPTED_TYPES.includes(file.type)) {
+  if (!ACCEPTED_TYPES.includes(file.type))
     return "Format invalide. Utilisez une photo JPG, PNG ou WebP.";
-  }
-
-  if (file.size > MAX_FILE_SIZE) {
+  if (file.size > MAX_FILE_SIZE)
     return "Fichier trop lourd. La taille maximale est de 4 MB.";
-  }
-
   return null;
 }
 
@@ -104,7 +93,6 @@ function ProductList({ products }: { products: Product[] }) {
       </p>
     );
   }
-
   return (
     <div className="routine-products">
       {products.map((product) => (
@@ -130,6 +118,31 @@ function ProductList({ products }: { products: Product[] }) {
   );
 }
 
+/* ── Phone frame réutilisable ─────────────────────────────────── */
+function PhoneFrame() {
+  return (
+    <div className="phone-frame">
+      <div className="phone-topbar">
+        <span>Skinlu</span>
+        <b>IA</b>
+      </div>
+      <div className="phone-score">
+        <small>Priorité peau</small>
+        <strong>Déshydratation</strong>
+      </div>
+      <div className="phone-metrics">
+        <div><span>Hydratation</span><b>Faible</b></div>
+        <div><span>Pores visibles</span><b>Modéré</b></div>
+        <div><span>Sensibilité</span><b>Élevée</b></div>
+      </div>
+      <div className="phone-routine">
+        <span>Routine proposée</span>
+        <b>Cleanser · Sérum · SPF</b>
+      </div>
+    </div>
+  );
+}
+
 export default function Home() {
   const [selfie, setSelfie] = useState<File | null>(null);
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
@@ -145,18 +158,13 @@ export default function Home() {
   const [routine, setRoutine] = useState<RoutineReport | null>(null);
 
   const helperText = useMemo(() => {
-    if (!selfie) {
-      return "Selfie net, visage bien éclairé. JPG, PNG ou WebP. 4 MB max.";
-    }
-
+    if (!selfie) return "Selfie net, visage bien éclairé. JPG, PNG ou WebP. 4 MB max.";
     return `Selfie prêt · ${formatBytes(selfie.size)}`;
   }, [selfie]);
 
   useEffect(() => {
     return () => {
-      if (previewUrl) {
-        URL.revokeObjectURL(previewUrl);
-      }
+      if (previewUrl) URL.revokeObjectURL(previewUrl);
     };
   }, [previewUrl]);
 
@@ -171,19 +179,13 @@ export default function Home() {
           }
         });
       },
-      { rootMargin: "0px 0px -10% 0px", threshold: 0.1 },
+      { rootMargin: "0px 0px -10% 0px", threshold: 0.08 },
     );
-
-    revealElements.forEach((element) => observer.observe(element));
-
-    return () => {
-      observer.disconnect();
-    };
+    revealElements.forEach((el) => observer.observe(el));
+    return () => observer.disconnect();
   }, []);
 
-  function clearPaidState() {
-    setRoutine(null);
-  }
+  function clearPaidState() { setRoutine(null); }
 
   function handleSelfieChange(event: ChangeEvent<HTMLInputElement>) {
     const nextFile = event.target.files?.[0] ?? null;
@@ -192,16 +194,11 @@ export default function Home() {
     clearPaidState();
     window.localStorage.removeItem(DIAGNOSTIC_STORAGE_KEY);
 
-    if (!nextFile) {
-      setSelfie(null);
-      setPreviewUrl(null);
-      return;
-    }
+    if (!nextFile) { setSelfie(null); setPreviewUrl(null); return; }
 
     const validationError = validateFile(nextFile);
     if (validationError) {
-      setSelfie(null);
-      setPreviewUrl(null);
+      setSelfie(null); setPreviewUrl(null);
       setError(validationError);
       event.target.value = "";
       return;
@@ -209,10 +206,8 @@ export default function Home() {
 
     const nextPreviewUrl = URL.createObjectURL(nextFile);
     setSelfie(nextFile);
-    setPreviewUrl((currentUrl) => {
-      if (currentUrl) {
-        URL.revokeObjectURL(currentUrl);
-      }
+    setPreviewUrl((cur) => {
+      if (cur) URL.revokeObjectURL(cur);
       return nextPreviewUrl;
     });
   }
@@ -226,119 +221,68 @@ export default function Home() {
 
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
-
-    if (!selfie) {
-      setError("Ajoutez un selfie avant de lancer le diagnostic.");
-      return;
-    }
-
+    if (!selfie) { setError("Ajoutez un selfie avant de lancer le diagnostic."); return; }
     const validationError = validateFile(selfie);
-    if (validationError) {
-      setError(validationError);
-      return;
-    }
+    if (validationError) { setError(validationError); return; }
 
     const body = new FormData();
     body.append("selfie", selfie);
     body.append("skin_type", skinType);
-    if (email.trim()) {
-      body.append("email", email.trim());
-    }
+    if (email.trim()) body.append("email", email.trim());
 
-    setLoading(true);
-    setError(null);
-    setDiagnostic(null);
-    clearPaidState();
+    setLoading(true); setError(null); setDiagnostic(null); clearPaidState();
 
     try {
       const controller = new AbortController();
-      const timeoutId = window.setTimeout(
-        () => controller.abort(),
-        ANALYSIS_TIMEOUT_MS,
-      );
-      const response = await fetch("/api/skin-context", {
-        method: "POST",
-        body,
-        signal: controller.signal,
-      });
+      const timeoutId = window.setTimeout(() => controller.abort(), ANALYSIS_TIMEOUT_MS);
+      const response = await fetch("/api/skin-context", { method: "POST", body, signal: controller.signal });
       window.clearTimeout(timeoutId);
-
       const data = await response.json();
-
       if (!response.ok) {
         throw new Error(
           data.error === "service_timeout"
-            ? "Le diagnostic met trop de temps à répondre. Réessayez avec une photo plus nette."
+            ? "Le diagnostic met trop de temps. Réessayez avec une photo plus nette."
             : data.error ?? "Le diagnostic n'a pas pu démarrer.",
         );
       }
-
       setDiagnostic(data as DiagnosticPreview);
       window.localStorage.setItem(DIAGNOSTIC_STORAGE_KEY, JSON.stringify(data));
     } catch (caughtError) {
       setError(
         caughtError instanceof DOMException && caughtError.name === "AbortError"
           ? "Le diagnostic prend trop de temps. Réessayez avec un selfie net et bien cadré."
-          : caughtError instanceof Error
-            ? caughtError.message
-            : "Une erreur inattendue est survenue.",
+          : caughtError instanceof Error ? caughtError.message : "Une erreur inattendue est survenue.",
       );
-    } finally {
-      setLoading(false);
-    }
+    } finally { setLoading(false); }
   }
 
   async function startCheckout() {
-    if (!diagnostic) {
-      setError("Diagnostic manquant pour ouvrir Stripe Checkout.");
-      return;
-    }
-
-    setCheckoutLoading(true);
-    setError(null);
-
+    if (!diagnostic) { setError("Diagnostic manquant pour ouvrir Stripe Checkout."); return; }
+    setCheckoutLoading(true); setError(null);
     try {
       const response = await fetch("/api/stripe/checkout", {
         method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          sessionToken: diagnostic.session_token,
-          email: email.trim() || undefined,
-        }),
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ sessionToken: diagnostic.session_token, email: email.trim() || undefined }),
       });
       const data = await response.json();
-
-      if (!response.ok) {
-        throw new Error(data.error ?? "Stripe Checkout indisponible.");
-      }
-
+      if (!response.ok) throw new Error(data.error ?? "Stripe Checkout indisponible.");
       window.location.href = data.url;
     } catch (caughtError) {
-      setError(
-        caughtError instanceof Error
-          ? caughtError.message
-          : "Stripe Checkout indisponible.",
-      );
+      setError(caughtError instanceof Error ? caughtError.message : "Stripe Checkout indisponible.");
       setCheckoutLoading(false);
     }
   }
 
   const unlockReport = useCallback(async (sessionToken: string) => {
-    setReportLoading(true);
-    setError(null);
-
+    setReportLoading(true); setError(null);
     try {
       const response = await fetch("/api/report", {
         method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ sessionToken }),
       });
       const data = await response.json();
-
       if (!response.ok) {
         throw new Error(
           data.error === "report_locked"
@@ -346,25 +290,17 @@ export default function Home() {
             : data.error ?? "Routine verrouillée.",
         );
       }
-
       setRoutine(data as RoutineReport);
     } catch (caughtError) {
-      setError(
-        caughtError instanceof Error ? caughtError.message : "Routine verrouillée.",
-      );
-    } finally {
-      setReportLoading(false);
-    }
+      setError(caughtError instanceof Error ? caughtError.message : "Routine verrouillée.");
+    } finally { setReportLoading(false); }
   }, []);
 
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
     const sessionToken = params.get("session_token");
-
     if (params.get("payment") === "success" && sessionToken) {
-      window.setTimeout(() => {
-        void unlockReport(sessionToken);
-      }, 0);
+      window.setTimeout(() => void unlockReport(sessionToken), 0);
       window.history.replaceState(null, "", window.location.pathname);
     }
   }, [unlockReport]);
@@ -372,74 +308,75 @@ export default function Home() {
   return (
     <main className={`site-shell ${diagnostic ? "has-result" : ""}`}>
 
-      {/* ── 1. HERO ─────────────────────────────────────────────── */}
+      {/* ── 1. HERO ──────────────────────────────────────────────── */}
       <section className="hero-section" aria-labelledby="product-title">
+        <div className="container hero-container">
 
-        {/* Image de fond pleine largeur */}
-        <div className="hero-bg" aria-hidden="true">
-          <img src="/faces/face-02.png" alt="" className="hero-bg-img" />
-          <div className="hero-bg-overlay" />
-        </div>
-
-        {/* Contenu texte */}
-        <div className="container hero-content">
-          <div className="eyebrow hero-eyebrow">Diagnostic peau par IA · Gratuit</div>
-          <h1 id="product-title">
-            Skinlu<span>.</span>
-          </h1>
-          <p className="hero-benefit">
-            Découvre ce dont<br />
-            ta peau a vraiment <span className="hero-accent">besoin.</span>
-          </p>
-          <p className="lead">
-            Un selfie suffit. Notre IA repère tes préoccupations cutanées et
-            construit une routine sur mesure, produits multi-marques inclus.
-          </p>
-          <div className="trust-strip" aria-label="Points clés Skinlu">
-            <span>Aperçu gratuit</span>
-            <span>Routine AM/PM</span>
-            <span>Produits FR</span>
+          {/* Copy — first in DOM for a11y, shown below visual on mobile */}
+          <div className="hero-copy">
+            <div className="eyebrow hero-eyebrow">Diagnostic peau par IA · Gratuit</div>
+            <h1 id="product-title">Skinlu<span>.</span></h1>
+            <p className="hero-benefit">
+              Découvre ce dont ta peau a vraiment{" "}
+              <span className="hero-accent">besoin.</span>
+            </p>
+            <p className="lead">
+              Un selfie suffit. Notre IA repère tes préoccupations cutanées
+              et construit une routine sur mesure, produits multi-marques inclus.
+            </p>
+            <div className="trust-strip">
+              <span>Aperçu gratuit</span>
+              <span>Routine AM/PM</span>
+              <span>Produits FR</span>
+            </div>
+            <a href="#diagnostic" className="hero-cta">
+              Voir mon analyse gratuite
+            </a>
           </div>
-          <a href="#diagnostic" className="hero-cta">
-            Voir mon analyse gratuite
-          </a>
-        </div>
 
-        {/* Phone mockup flottant en bas */}
-        <div className="hero-phone-float" aria-hidden="true">
-          <div className="phone-frame">
-            <div className="phone-topbar">
-              <span>Skinlu</span>
-              <b>IA</b>
+          {/* Visual — portrait + floating cards UI */}
+          <div className="hero-visual" aria-hidden="true">
+            <div className="hero-portrait-wrap">
+              <img src="/faces/face-02.png" alt="" className="hero-face" />
+              <div className="hero-portrait-gradient" />
             </div>
-            <div className="phone-score">
-              <small>Priorité peau</small>
-              <strong>Déshydratation</strong>
+
+            {/* Floating top-left: routine label */}
+            <div className="hero-float-card hero-float-top glass-card">
+              <span>Routine matin</span>
+              <strong>Cleanser · Sérum · SPF</strong>
             </div>
-            <div className="phone-metrics">
-              <div>
-                <span>Hydratation</span>
-                <b>Faible</b>
+
+            {/* Floating bottom-right: diagnostic result */}
+            <div className="hero-float-card hero-float-diag glass-card">
+              <div className="hfd-header">
+                <span>Skinlu</span>
+                <b>IA</b>
               </div>
-              <div>
-                <span>Pores visibles</span>
-                <b>Modéré</b>
+              <div className="hfd-priority">
+                <small>Priorité peau</small>
+                <strong>Déshydratation</strong>
               </div>
-              <div>
-                <span>Sensibilité</span>
-                <b>Élevée</b>
+              <div className="hfd-metrics">
+                <div><span>Hydratation</span><b>Faible</b></div>
+                <div><span>Pores visibles</span><b>Modéré</b></div>
+                <div><span>Sensibilité</span><b>Élevée</b></div>
               </div>
-            </div>
-            <div className="phone-routine">
-              <span>Routine proposée</span>
-              <b>Cleanser · Sérum · SPF</b>
+              <div className="hfd-routine">
+                <span>Routine proposée</span>
+                <strong>Cleanser · Sérum · SPF</strong>
+              </div>
+              <div className="hfd-recommend">
+                <span>Recommandé</span>
+                <strong>Sérum hydratant</strong>
+              </div>
             </div>
           </div>
-        </div>
 
+        </div>
       </section>
 
-      {/* ── 2. TRUST BAR ────────────────────────────────────────── */}
+      {/* ── 2. TRUST BAR ─────────────────────────────────────────── */}
       <section className="trust-section" aria-label="Chiffres Skinlu">
         <div className="container">
           <div className="trust-bar">
@@ -456,169 +393,148 @@ export default function Home() {
         </div>
       </section>
 
-      {/* ── 3. COMMENT ÇA MARCHE ────────────────────────────────── */}
-      <section className="steps-section">
+      {/* ── 3. PHONE DEMO + MARQUES ──────────────────────────────── */}
+      <section className="phone-demo-section">
         <div className="container">
-          <div className="section-heading reveal">
+          <div className="section-heading section-heading--center reveal">
             <span className="eyebrow">Comment ça marche</span>
-            <h2>Simple comme un selfie.</h2>
+            <h2>Toute ta routine,<br />d&apos;un seul selfie.</h2>
           </div>
-          <div className="steps-list">
-            <div className="step-item reveal reveal-delay-1">
-              <b>01</b>
-              <h3>Prends ton selfie</h3>
-              <span>Un selfie net, bien éclairé. JPG, PNG ou WebP, 4 MB max.</span>
+          <div className="phone-demo-layout">
+            <div className="phone-demo-brands reveal reveal-delay-1">
+              <span>CeraVe</span>
+              <span>La Roche-Posay</span>
+              <span>Vichy</span>
+              <span>Avène</span>
+              <span>The Ordinary</span>
+              <span>Bioderma</span>
             </div>
-            <div className="step-connector" aria-hidden="true" />
-            <div className="step-item reveal reveal-delay-2">
-              <b>02</b>
-              <h3>Notre IA analyse</h3>
-              <span>Type de peau, préoccupations, priorité cutanée — en 30 secondes.</span>
+            <div className="phone-demo-frame reveal">
+              <PhoneFrame />
             </div>
-            <div className="step-connector" aria-hidden="true" />
-            <div className="step-item reveal reveal-delay-3">
-              <b>03</b>
-              <h3>Ta routine sur mesure</h3>
-              <span>Une routine AM/PM complète, avec produits multi-marques adaptés.</span>
+            <div className="phone-demo-steps reveal reveal-delay-2">
+              <div className="demo-step">
+                <b>01</b>
+                <span>Ajoute ton selfie</span>
+              </div>
+              <div className="demo-step">
+                <b>02</b>
+                <span>L&apos;IA analyse ta peau</span>
+              </div>
+              <div className="demo-step">
+                <b>03</b>
+                <span>Reçois ta routine sur mesure</span>
+              </div>
             </div>
           </div>
         </div>
       </section>
 
-      {/* ── 4. MESSAGES / PREUVE ────────────────────────────────── */}
-      <section className="proof-section" aria-label="Messages Skinlu">
+      {/* ── 4. ARC 3D ────────────────────────────────────────────── */}
+      <section className="arc-section">
         <div className="container">
-          <div className="section-heading reveal">
-            <span className="eyebrow">Pourquoi Skinlu</span>
-            <h2>Le déclic : comprendre sa peau avant d'acheter.</h2>
+          <div className="section-heading section-heading--center reveal">
+            <span className="eyebrow">Ce qu&apos;elles en disent</span>
+            <h2>Le déclic : comprendre sa peau avant d&apos;acheter.</h2>
           </div>
-          <div className="review-grid">
-            <article className="review-card reveal reveal-delay-1">
-              <p>&ldquo;Enfin un diagnostic skincare qui ne pousse pas une seule marque.&rdquo;</p>
-            </article>
-            <article className="review-card reveal reveal-delay-2">
-              <p>&ldquo;J&apos;ai compris ma peau en 2 minutes, sans jargon.&rdquo;</p>
-            </article>
-            <article className="review-card reveal reveal-delay-3">
-              <p>&ldquo;Skinlu m&apos;a évité d&apos;acheter encore des produits au hasard.&rdquo;</p>
-            </article>
-            <article className="review-card reveal reveal-delay-4">
-              <p>&ldquo;Avant, je suivais TikTok au hasard. Là, j&apos;ai une routine adaptée à ma peau.&rdquo;</p>
-            </article>
+        </div>
+        <div className="arc-wrapper reveal">
+          <div className="arc-inner">
+            <div className="arc-card">
+              <img src="/faces/face-01.png" alt="" aria-hidden="true" />
+              <div className="arc-card-overlay">
+                <p>&ldquo;J&apos;ai compris ma peau en 2 minutes, sans jargon.&rdquo;</p>
+              </div>
+            </div>
+            <div className="arc-card arc-card--center">
+              <img src="/faces/face-03.png" alt="" aria-hidden="true" />
+              <div className="arc-card-overlay">
+                <p>&ldquo;Skinlu m&apos;a évité d&apos;acheter encore au hasard.&rdquo;</p>
+              </div>
+            </div>
+            <div className="arc-card">
+              <img src="/faces/face-04.png" alt="" aria-hidden="true" />
+              <div className="arc-card-overlay">
+                <p>&ldquo;Enfin un diagnostic qui ne pousse pas une seule marque.&rdquo;</p>
+              </div>
+            </div>
           </div>
-          <blockquote className="review-pullquote reveal">
+        </div>
+        <div className="container">
+          <blockquote className="arc-pullquote reveal">
             &ldquo;Comme une conseillère skincare, mais en plus rapide.&rdquo;
           </blockquote>
         </div>
       </section>
 
-      {/* ── 5. BÉNÉFICES ────────────────────────────────────────── */}
-      <section className="benefits-section">
-        <div className="container">
-          <div className="section-heading reveal">
-            <span className="eyebrow">Ce que tu reçois</span>
-            <h2>Un diagnostic lisible, une routine à appliquer.</h2>
+      {/* ── 5. SPLIT : TEXTE + PHONE ─────────────────────────────── */}
+      <section className="split-section">
+        <div className="container split-container">
+          <div className="split-copy reveal">
+            <span className="eyebrow">Résultat immédiat</span>
+            <h2>Analyse IA<br />pour chaque<br />type de peau.</h2>
+            <ul className="split-benefits">
+              <li>Priorité cutanée identifiée instantanément</li>
+              <li>Routine AM/PM structurée par étapes</li>
+              <li>Produits multi-marques adaptés à ton profil</li>
+            </ul>
+            <a href="#diagnostic" className="hero-cta">
+              Commencer gratuitement
+            </a>
           </div>
-
-          <div className="feature-grid">
-            <article className="reveal reveal-delay-1">
-              <span>01</span>
-              <h3>Priorité peau</h3>
-              <p>
-                Skinlu met en avant le sujet à traiter en premier&nbsp;:
-                hydratation, pores, sensibilité, taches ou imperfections.
-              </p>
-            </article>
-            <article className="reveal reveal-delay-2">
-              <span>02</span>
-              <h3>Routine AM/PM</h3>
-              <p>
-                Une routine matin et soir, structurée par étapes, pour éviter
-                les achats dispersés et les doublons.
-              </p>
-            </article>
-            <article className="reveal reveal-delay-3">
-              <span>03</span>
-              <h3>Produits multi-marques</h3>
-              <p>
-                Des recommandations parmi des marques connues, sélectionnées
-                selon ton type de peau et tes préoccupations.
-              </p>
-            </article>
-          </div>
-
-          <div className="result-preview-grid reveal">
-            <article className="result-preview-main">
-              <span>Priorité détectée</span>
-              <h3>Déshydratation</h3>
-              <p>
-                Ta routine commence par réparer la barrière cutanée et retenir
-                l&apos;eau, avant d&apos;ajouter des actifs plus ciblés.
-              </p>
-            </article>
-            <article>
-              <span>À surveiller</span>
-              <strong>Pores visibles</strong>
-            </article>
-            <article>
-              <span>Routine</span>
-              <strong>Matin + soir</strong>
-            </article>
-            <article>
-              <span>Produits</span>
-              <strong>Multi-marques</strong>
-            </article>
+          <div className="split-phone reveal reveal-delay-1">
+            <PhoneFrame />
           </div>
         </div>
       </section>
 
-      {/* ── 6. CONVERSION ───────────────────────────────────────── */}
-      <section
-        className="conversion-section"
-        id="diagnostic"
-        aria-label="Diagnostic de peau"
-      >
+      {/* ── 6. STATS FULL-BLEED ──────────────────────────────────── */}
+      <section className="stats-section">
+        <div className="container stats-inner">
+          <div className="stats-big">
+            <div className="stats-number reveal">3 200</div>
+            <p className="stats-label reveal reveal-delay-1">diagnostics réalisés</p>
+          </div>
+          <p className="stats-sub reveal reveal-delay-2">
+            Ta routine sur mesure, en 30 secondes.
+          </p>
+          <div className="brand-strip reveal reveal-delay-3">
+            <span>CeraVe</span>
+            <span>La Roche-Posay</span>
+            <span>Vichy</span>
+            <span>Avène</span>
+            <span>The Ordinary</span>
+            <span>Bioderma</span>
+          </div>
+        </div>
+      </section>
+
+      {/* ── 7. CONVERSION ────────────────────────────────────────── */}
+      <section className="conversion-section" id="diagnostic" aria-label="Diagnostic de peau">
         <div className="container">
           <div className="conversion-inner">
-
             <div className="conversion-sticky">
               <div className="section-heading">
                 <span className="eyebrow">Commencer</span>
                 <h2>Ton analyse gratuite en 30 secondes.</h2>
               </div>
             </div>
-
             <div>
               <div className="upload-panel">
                 <div className="panel-heading">
                   <span>Selfie peau</span>
                   <strong>4 MB max</strong>
                 </div>
-
                 <form onSubmit={handleSubmit} className="upload-form">
                   <div className="selfie-picker">
                     {previewUrl ? (
                       <label className="drop-zone has-preview">
-                        <input
-                          type="file"
-                          name="selfie"
-                          accept="image/*"
-                          onChange={handleSelfieChange}
-                        />
-                        <img
-                          src={previewUrl}
-                          alt="Preview du selfie"
-                          className="photo-preview"
-                        />
+                        <input type="file" name="selfie" accept="image/*" onChange={handleSelfieChange} />
+                        <img src={previewUrl} alt="Preview du selfie" className="photo-preview" />
                       </label>
                     ) : (
                       <label className="drop-zone">
-                        <input
-                          type="file"
-                          name="selfie"
-                          accept="image/*"
-                          onChange={handleSelfieChange}
-                        />
+                        <input type="file" name="selfie" accept="image/*" onChange={handleSelfieChange} />
                         <span className="drop-zone-empty">
                           <strong>Ajouter une photo</strong>
                           <span>{helperText}</span>
@@ -626,23 +542,14 @@ export default function Home() {
                       </label>
                     )}
                   </div>
-
-                  {previewUrl && selfie ? (
-                    <p className="file-meta">{formatBytes(selfie.size)}</p>
-                  ) : null}
-
-                  <p className="upload-reassurance">
-                    Ton selfie est analysé puis supprimé. Jamais stocké.
-                  </p>
-
+                  {previewUrl && selfie ? <p className="file-meta">{formatBytes(selfie.size)}</p> : null}
+                  <p className="upload-reassurance">Ton selfie est analysé puis supprimé. Jamais stocké.</p>
                   <fieldset className="skin-type-fieldset">
                     <legend>Type de peau ressenti</legend>
                     <div className="skin-type-grid">
                       {SKIN_TYPES.map((option) => (
                         <label
-                          className={`skin-type-option ${
-                            skinType === option.value ? "is-selected" : ""
-                          }`}
+                          className={`skin-type-option ${skinType === option.value ? "is-selected" : ""}`}
                           key={option.value}
                         >
                           <input
@@ -657,14 +564,8 @@ export default function Home() {
                       ))}
                     </div>
                   </fieldset>
-
                   {error ? <p className="form-error">{error}</p> : null}
-
-                  <button
-                    className="analyze-button"
-                    type="submit"
-                    disabled={loading}
-                  >
+                  <button className="analyze-button" type="submit" disabled={loading}>
                     {loading ? "Diagnostic en cours..." : "Voir mon analyse gratuite"}
                   </button>
                   <p className="cta-microcopy">Gratuit · Résultat en 30 secondes</p>
@@ -685,52 +586,38 @@ export default function Home() {
                       <h2>{concernLabel(diagnostic.top_priority)}</h2>
                       <p>{diagnostic.summary}</p>
                     </div>
-
                     <div className="concern-list">
                       {diagnostic.concerns.map((concern) => (
                         <span key={concern}>{concernLabel(concern)}</span>
                       ))}
                     </div>
-
                     <div className="locked-section" aria-label="Routine complète masquée">
                       <div className="locked-header">
                         <span>Routine complète AM/PM</span>
                         <strong>Verrouillée</strong>
                       </div>
-                      <div className="paywall-teasers" aria-label="Aperçu du rapport">
+                      <div className="paywall-teasers">
                         <span>Routine matin</span>
                         <span>Routine soir</span>
                         <span>Produits multi-marques</span>
                         <span>Liens affiliés</span>
                       </div>
                     </div>
-
                     <label className="email-field unlock-email">
                       <span>Email pour recevoir ta routine</span>
                       <input
                         type="email"
                         value={email}
-                        onChange={(event) => setEmail(event.target.value)}
+                        onChange={(e) => setEmail(e.target.value)}
                         placeholder="vous@email.com"
                       />
                     </label>
-
-                    <button
-                      className="stripe-button"
-                      type="button"
-                      onClick={startCheckout}
-                      disabled={checkoutLoading}
-                    >
-                      {checkoutLoading
-                        ? "Ouverture de Stripe..."
-                        : "Débloquer ma routine complète · 9,99 EUR"}
+                    <button className="stripe-button" type="button" onClick={startCheckout} disabled={checkoutLoading}>
+                      {checkoutLoading ? "Ouverture de Stripe..." : "Débloquer ma routine complète · 9,99 EUR"}
                     </button>
                     <p className="paywall-note">
-                      Le paiement débloque la routine AM/PM et les produits
-                      recommandés. Les recommandations dépendent du catalogue
-                      produits ajouté dans Supabase.
+                      Le paiement débloque la routine AM/PM et les produits recommandés.
                     </p>
-
                     {reportLoading ? (
                       <div className="status-box" role="status" aria-live="polite">
                         <div className="skeleton-line wide" />
@@ -738,29 +625,24 @@ export default function Home() {
                         <div className="skeleton-line short" />
                       </div>
                     ) : null}
-
                     {routine ? (
                       <section className="full-report" aria-label="Routine complète">
                         <div className="report-heading">
                           <span>Routine complète</span>
                           <strong>Débloquée</strong>
                         </div>
-
                         <section className="compatibility-card">
                           <h2>Priorité</h2>
                           <p>{concernLabel(routine.top_priority)}</p>
                         </section>
-
                         <section className="routine-block">
                           <h2>Matin</h2>
                           <ProductList products={routine.morning} />
                         </section>
-
                         <section className="routine-block">
                           <h2>Soir</h2>
                           <ProductList products={routine.evening} />
                         </section>
-
                         <p className="medical-disclaimer">{routine.disclaimer}</p>
                       </section>
                     ) : null}
@@ -768,20 +650,14 @@ export default function Home() {
                 ) : null}
               </div>
             </div>
-
           </div>
         </div>
       </section>
 
-      {/* ── 7. IMMERSIVE BANNER ─────────────────────────────────── */}
+      {/* ── 8. BANNIÈRE IMMERSIVE ────────────────────────────────── */}
       <section className="immersive-section" aria-label="Ambiance Skinlu">
         <div className="immersive-banner reveal">
-          <img
-            src="/faces/face-04.png"
-            alt=""
-            aria-hidden="true"
-            className="immersive-img"
-          />
+          <img src="/faces/face-04.png" alt="" aria-hidden="true" className="immersive-img" />
           <div className="immersive-overlay">
             <div className="container">
               <span className="eyebrow">Skin first</span>
@@ -804,47 +680,35 @@ export default function Home() {
         </div>
       </section>
 
-      {/* ── 8. FAQ ──────────────────────────────────────────────── */}
+      {/* ── 9. FAQ ───────────────────────────────────────────────── */}
       <section className="faq-section">
         <div className="container">
           <div className="faq-inner">
-
             <div className="faq-heading-sticky">
               <div className="section-heading reveal">
                 <span className="eyebrow">Questions fréquentes</span>
                 <h2>Avant d&apos;uploader ton selfie.</h2>
               </div>
             </div>
-
             <div className="faq-list reveal">
               <details open>
                 <summary>Est-ce que mon selfie est stocké&nbsp;?</summary>
-                <p>
-                  Non. Il sert à générer l&apos;analyse et n&apos;est pas conservé
-                  comme fichier par Skinlu.
-                </p>
+                <p>Non. Il sert à générer l&apos;analyse et n&apos;est pas conservé comme fichier par Skinlu.</p>
               </details>
               <details>
                 <summary>Est-ce un diagnostic médical&nbsp;?</summary>
-                <p>
-                  Non. Skinlu fournit une lecture cosmétique informative, pas un
-                  avis médical ou dermatologique.
-                </p>
+                <p>Non. Skinlu fournit une lecture cosmétique informative, pas un avis médical ou dermatologique.</p>
               </details>
               <details>
                 <summary>Comment les produits sont-ils choisis&nbsp;?</summary>
-                <p>
-                  La routine s&apos;appuie sur ton type de peau, tes préoccupations
-                  et le catalogue multi-marques renseigné dans Skinlu.
-                </p>
+                <p>La routine s&apos;appuie sur ton type de peau, tes préoccupations et le catalogue multi-marques renseigné dans Skinlu.</p>
               </details>
             </div>
-
           </div>
         </div>
       </section>
 
-      {/* ── 9. FINAL CTA ────────────────────────────────────────── */}
+      {/* ── 10. FINAL CTA ────────────────────────────────────────── */}
       <section className="final-cta">
         <div className="container">
           <div className="final-cta-inner reveal">
@@ -855,19 +719,14 @@ export default function Home() {
         </div>
       </section>
 
-      {/* ── FOOTER ──────────────────────────────────────────────── */}
+      {/* ── FOOTER ───────────────────────────────────────────────── */}
       <footer className="site-footer">
         <div className="container">
           <div className="site-footer-inner">
-            <p>
-              Analyse cosmétique informative. Skinlu ne fournit pas de diagnostic
-              médical ou dermatologique.
-            </p>
+            <p>Analyse cosmétique informative. Skinlu ne fournit pas de diagnostic médical ou dermatologique.</p>
             <nav aria-label="Liens légaux">
               <a href="/mentions-legales">Mentions légales</a>
-              <a href="/politique-de-confidentialite">
-                Politique de confidentialité
-              </a>
+              <a href="/politique-de-confidentialite">Politique de confidentialité</a>
             </nav>
           </div>
         </div>
