@@ -430,7 +430,7 @@ export default function Home() {
         </div>
       </section>
 
-      {/* ── 4. ARC 3D ────────────────────────────────────────────── */}
+      {/* ── 4. PHOTO REEL + AVIS ─────────────────────────────────── */}
       <section className="arc-section">
         <div className="container">
           <div className="section-heading section-heading--center reveal">
@@ -438,30 +438,39 @@ export default function Home() {
             <h2>Le déclic : comprendre sa peau avant d&apos;acheter.</h2>
           </div>
         </div>
-        <div className="arc-wrapper reveal">
-          <div className="arc-inner">
-            <div className="arc-card">
-              <img src="/faces/face-01.png" alt="" aria-hidden="true" />
-              <div className="arc-card-overlay">
-                <p>&ldquo;J&apos;ai compris ma peau en 2 minutes, sans jargon.&rdquo;</p>
-              </div>
-            </div>
-            <div className="arc-card arc-card--center">
-              <img src="/faces/face-03.png" alt="" aria-hidden="true" />
-              <div className="arc-card-overlay">
-                <p>&ldquo;Skinlu m&apos;a évité d&apos;acheter encore au hasard.&rdquo;</p>
-              </div>
-            </div>
-            <div className="arc-card">
-              <img src="/faces/face-04.png" alt="" aria-hidden="true" />
-              <div className="arc-card-overlay">
-                <p>&ldquo;Enfin un diagnostic qui ne pousse pas une seule marque.&rdquo;</p>
-              </div>
-            </div>
+
+        {/* Défilement infini des photos */}
+        <div className="photo-reel" aria-hidden="true">
+          <div className="photo-reel-track">
+            <div className="photo-reel-card"><img src="/faces/face-01.png" alt="" /></div>
+            <div className="photo-reel-card"><img src="/faces/face-03.png" alt="" /></div>
+            <div className="photo-reel-card"><img src="/faces/face-04.png" alt="" /></div>
+            <div className="photo-reel-card"><img src="/faces/face-02.png" alt="" /></div>
+            {/* Duplicats pour boucle parfaite */}
+            <div className="photo-reel-card"><img src="/faces/face-01.png" alt="" /></div>
+            <div className="photo-reel-card"><img src="/faces/face-03.png" alt="" /></div>
+            <div className="photo-reel-card"><img src="/faces/face-04.png" alt="" /></div>
+            <div className="photo-reel-card"><img src="/faces/face-02.png" alt="" /></div>
           </div>
         </div>
+
+        {/* Cartes avis séparées */}
         <div className="container">
-          <blockquote className="arc-pullquote reveal">
+          <div className="testimonials-grid reveal">
+            <div className="testimonial-card">
+              <p>&ldquo;J&apos;ai compris ma peau en 2 minutes, sans jargon.&rdquo;</p>
+              <span>Léa, 27 ans</span>
+            </div>
+            <div className="testimonial-card">
+              <p>&ldquo;Skinlu m&apos;a évité d&apos;acheter encore au hasard.&rdquo;</p>
+              <span>Camille, 31 ans</span>
+            </div>
+            <div className="testimonial-card">
+              <p>&ldquo;Enfin un diagnostic qui ne pousse pas une seule marque.&rdquo;</p>
+              <span>Inès, 24 ans</span>
+            </div>
+          </div>
+          <blockquote className="arc-pullquote reveal reveal-delay-2">
             &ldquo;Comme une conseillère skincare, mais en plus rapide.&rdquo;
           </blockquote>
         </div>
@@ -498,13 +507,21 @@ export default function Home() {
           <p className="stats-sub reveal reveal-delay-2">
             Ta routine sur mesure, en 30 secondes.
           </p>
-          <div className="brand-strip reveal reveal-delay-3">
-            <span>CeraVe</span>
-            <span>La Roche-Posay</span>
-            <span>Vichy</span>
-            <span>Avène</span>
-            <span>The Ordinary</span>
-            <span>Bioderma</span>
+          <div className="brand-marquee reveal reveal-delay-3">
+            <div className="brand-marquee-track">
+              <span>CeraVe</span>
+              <span>La Roche-Posay</span>
+              <span>Vichy</span>
+              <span>Avène</span>
+              <span>The Ordinary</span>
+              <span>Bioderma</span>
+              <span>CeraVe</span>
+              <span>La Roche-Posay</span>
+              <span>Vichy</span>
+              <span>Avène</span>
+              <span>The Ordinary</span>
+              <span>Bioderma</span>
+            </div>
           </div>
         </div>
       </section>
@@ -665,16 +682,6 @@ export default function Home() {
                 Une expérience pensée<br />
                 comme un éditorial beauté.
               </p>
-            </div>
-          </div>
-        </div>
-        <div className="container">
-          <div className="accent-portraits">
-            <div className="accent-portrait reveal reveal-delay-1">
-              <img src="/faces/face-01.png" alt="" aria-hidden="true" />
-            </div>
-            <div className="accent-portrait reveal reveal-delay-2">
-              <img src="/faces/face-03.png" alt="" aria-hidden="true" />
             </div>
           </div>
         </div>
