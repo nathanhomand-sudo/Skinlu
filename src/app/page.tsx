@@ -374,79 +374,69 @@ export default function Home() {
 
       {/* ── 1. HERO ─────────────────────────────────────────────── */}
       <section className="hero-section" aria-labelledby="product-title">
-        <div className="container hero-container">
 
-          <div className="hero-copy">
-            <div className="eyebrow">Diagnostic peau par IA · Gratuit</div>
-            <h1 id="product-title">
-              Skinlu<span>.</span>
-            </h1>
-            <p className="hero-benefit">
-              Découvre ce dont ta peau a vraiment besoin.
-            </p>
-            <p className="lead">
-              Un selfie suffit. Notre IA repère tes préoccupations cutanées et
-              construit une routine soin sur mesure, produits multi-marques inclus.
-            </p>
-            <div className="trust-strip" aria-label="Points clés Skinlu">
-              <span>Aperçu gratuit</span>
-              <span>Routine AM/PM</span>
-              <span>Produits FR</span>
-            </div>
-            <a href="#diagnostic" className="hero-cta">
-              Voir mon analyse gratuite
-            </a>
+        {/* Image de fond pleine largeur */}
+        <div className="hero-bg" aria-hidden="true">
+          <img src="/faces/face-02.png" alt="" className="hero-bg-img" />
+          <div className="hero-bg-overlay" />
+        </div>
+
+        {/* Contenu texte */}
+        <div className="container hero-content">
+          <div className="eyebrow hero-eyebrow">Diagnostic peau par IA · Gratuit</div>
+          <h1 id="product-title">
+            Skinlu<span>.</span>
+          </h1>
+          <p className="hero-benefit">
+            Découvre ce dont<br />
+            ta peau a vraiment <span className="hero-accent">besoin.</span>
+          </p>
+          <p className="lead">
+            Un selfie suffit. Notre IA repère tes préoccupations cutanées et
+            construit une routine sur mesure, produits multi-marques inclus.
+          </p>
+          <div className="trust-strip" aria-label="Points clés Skinlu">
+            <span>Aperçu gratuit</span>
+            <span>Routine AM/PM</span>
+            <span>Produits FR</span>
           </div>
+          <a href="#diagnostic" className="hero-cta">
+            Voir mon analyse gratuite
+          </a>
+        </div>
 
-          <div className="hero-visual" aria-hidden="true">
-            <div className="hero-portrait-wrap">
-              <img
-                src="/faces/face-02.png"
-                alt=""
-                className="hero-face"
-              />
+        {/* Phone mockup flottant en bas */}
+        <div className="hero-phone-float" aria-hidden="true">
+          <div className="phone-frame">
+            <div className="phone-topbar">
+              <span>Skinlu</span>
+              <b>IA</b>
             </div>
-
-            <div className="floating-card floating-card-left">
-              <span>Routine matin</span>
-              <strong>Cleanser · Sérum · SPF</strong>
+            <div className="phone-score">
+              <small>Priorité peau</small>
+              <strong>Déshydratation</strong>
             </div>
-
-            <div className="phone-frame">
-              <div className="phone-topbar">
-                <span>Skinlu</span>
-                <b>IA</b>
+            <div className="phone-metrics">
+              <div>
+                <span>Hydratation</span>
+                <b>Faible</b>
               </div>
-              <div className="phone-score">
-                <small>Priorité peau</small>
-                <strong>Déshydratation</strong>
+              <div>
+                <span>Pores visibles</span>
+                <b>Modéré</b>
               </div>
-              <div className="phone-metrics">
-                <div>
-                  <span>Hydratation</span>
-                  <b>Faible</b>
-                </div>
-                <div>
-                  <span>Pores visibles</span>
-                  <b>Modéré</b>
-                </div>
-                <div>
-                  <span>Sensibilité</span>
-                  <b>Élevée</b>
-                </div>
-              </div>
-              <div className="phone-routine">
-                <span>Routine proposée</span>
-                <b>Cleanser · Sérum · SPF</b>
+              <div>
+                <span>Sensibilité</span>
+                <b>Élevée</b>
               </div>
             </div>
-
-            <div className="floating-card floating-card-right">
-              <span>Recommandé</span>
-              <strong>Sérum hydratant</strong>
+            <div className="phone-routine">
+              <span>Routine proposée</span>
+              <b>Cleanser · Sérum · SPF</b>
             </div>
           </div>
         </div>
+
       </section>
 
       {/* ── 2. TRUST BAR ────────────────────────────────────────── */}
@@ -787,7 +777,7 @@ export default function Home() {
       <section className="immersive-section" aria-label="Ambiance Skinlu">
         <div className="immersive-banner reveal">
           <img
-            src="/faces/face-01.png"
+            src="/faces/face-04.png"
             alt=""
             aria-hidden="true"
             className="immersive-img"
@@ -805,10 +795,10 @@ export default function Home() {
         <div className="container">
           <div className="accent-portraits">
             <div className="accent-portrait reveal reveal-delay-1">
-              <img src="/faces/face-03.png" alt="" aria-hidden="true" />
+              <img src="/faces/face-01.png" alt="" aria-hidden="true" />
             </div>
             <div className="accent-portrait reveal reveal-delay-2">
-              <img src="/faces/face-04.png" alt="" aria-hidden="true" />
+              <img src="/faces/face-03.png" alt="" aria-hidden="true" />
             </div>
           </div>
         </div>
