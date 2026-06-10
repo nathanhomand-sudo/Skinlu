@@ -382,10 +382,10 @@ h1 span { color: var(--accent); }
 .phone-demo-frame {
   width: min(100%, 290px);
 }
-.phone-demo-frame .phone-frame {
+.phone-demo-frame .phone-mockup {
   box-shadow:
-    0 0 70px rgba(201,150,122,.07),
-    0 30px 70px rgba(0,0,0,.6),
+    0 0 80px rgba(201,150,122,.09),
+    0 40px 90px rgba(0,0,0,.7),
     0 4px 14px rgba(0,0,0,.3);
 }
 
@@ -405,67 +405,112 @@ h1 span { color: var(--accent); }
 .demo-step b { color: var(--accent); font-size: 0.72rem; font-weight: 700; letter-spacing: 0.06em; }
 .demo-step span { color: var(--text-secondary); font-size: 0.82rem; line-height: 1.4; }
 
-/* phone-frame (shared component) */
-.phone-frame {
+/* ── phone-mockup (réaliste) ─────────────────────────────────── */
+.phone-mockup {
+  position: relative;
   width: 100%;
-  border: 1px solid var(--border-strong);
-  border-radius: 26px;
-  background: var(--bg-alt);
-  padding: 1.1rem;
-  box-shadow: 0 20px 50px rgba(0,0,0,.5), 0 4px 12px rgba(0,0,0,.3);
+  max-width: 260px;
+  background: #0c0c0c;
+  border-radius: 48px;
+  border: 1.5px solid #2c2c2c;
+  padding: 16px 0 20px;
+  box-shadow:
+    inset 0 0 0 1px rgba(255,255,255,.05),
+    0 50px 120px rgba(0,0,0,.7),
+    16px 24px 64px rgba(0,0,0,.4);
 }
-.phone-topbar,
-.phone-metrics div,
-.phone-routine {
+/* Boutons volume (gauche) */
+.phone-mockup::before {
+  content: '';
+  position: absolute;
+  left: -2px;
+  top: 108px;
+  width: 2px;
+  height: 30px;
+  background: #252525;
+  border-radius: 2px 0 0 2px;
+  box-shadow: 0 46px 0 #252525;
+}
+/* Bouton power (droite) */
+.phone-mockup::after {
+  content: '';
+  position: absolute;
+  right: -2px;
+  top: 138px;
+  width: 2px;
+  height: 56px;
+  background: #252525;
+  border-radius: 0 2px 2px 0;
+}
+.phone-island {
+  width: 96px;
+  height: 26px;
+  background: #000;
+  border-radius: 20px;
+  margin: 0 auto 10px;
+}
+.phone-screen {
+  margin: 0 10px;
+  background: var(--bg-alt);
+  border-radius: 36px;
+  overflow: hidden;
+  padding: 18px 16px 20px;
+  display: grid;
+  gap: 0;
+}
+.pms-topbar {
   display: flex;
   justify-content: space-between;
-  gap: 1rem;
+  align-items: center;
+  padding-bottom: 10px;
 }
-.phone-topbar { align-items: center; padding-bottom: 0.9rem; }
-.phone-topbar span {
+.pms-topbar span {
   font-family: var(--font-fraunces), Fraunces, Georgia, serif;
   color: var(--text-primary);
-  font-size: 1.05rem;
+  font-size: 1rem;
 }
-.phone-topbar b {
+.pms-topbar b {
   border: 1px solid var(--border-strong);
   border-radius: 999px;
   color: var(--accent);
-  font-size: 0.65rem;
+  font-size: 0.6rem;
   font-weight: 700;
-  padding: 0.25rem 0.42rem;
+  padding: 0.2rem 0.38rem;
   letter-spacing: 0.06em;
 }
-.phone-score {
+.pms-priority {
   display: grid;
-  gap: 0.22rem;
+  gap: 3px;
   border-top: 1px solid var(--border);
-  border-bottom: 1px solid var(--border);
-  padding: 0.85rem 0;
+  padding: 10px 0;
 }
-.phone-score small,
-.phone-metrics span,
-.phone-routine span {
-  color: var(--text-secondary);
-  font-size: 0.72rem;
-}
-.phone-score strong {
+.pms-priority small { color: var(--text-secondary); font-size: 0.65rem; }
+.pms-priority strong {
   font-family: var(--font-fraunces), Fraunces, Georgia, serif;
   color: var(--text-primary);
-  font-size: 1.65rem;
+  font-size: 1.55rem;
+  font-weight: 650;
   line-height: 1;
 }
-.phone-metrics { display: grid; gap: 0.55rem; padding: 0.85rem 0; }
-.phone-metrics div { align-items: center; }
-.phone-metrics b { color: var(--accent); font-size: 0.82rem; }
-.phone-routine {
+.pms-metrics {
+  display: grid;
+  gap: 6px;
+  border-top: 1px solid var(--border);
+  padding: 10px 0;
+}
+.pms-metrics div { display: flex; justify-content: space-between; align-items: center; }
+.pms-metrics span { color: var(--text-secondary); font-size: 0.68rem; }
+.pms-metrics b { color: var(--accent); font-size: 0.68rem; font-weight: 700; }
+.pms-routine {
   border: 1px solid var(--border);
   border-radius: 10px;
   display: grid;
-  gap: 0.2rem;
-  padding: 0.7rem;
+  gap: 3px;
+  padding: 10px 12px;
+  margin-top: 4px;
 }
-.phone-routine b { font-size: 0.82rem; color: var(--text-primary); }
+.pms-routine span { color: var(--text-secondary); font-size: 0.65rem; }
+.pms-routine strong { color: var(--text-primary); font-size: 0.78rem; }
 
 /* ─── 4. PHOTO REEL + AVIS ───────────────────────────────────── */
 .arc-section {
@@ -476,61 +521,41 @@ h1 span { color: var(--accent); }
 }
 .arc-section .section-heading { margin-bottom: 3rem; }
 
-/* Photo reel marquee */
-.photo-reel {
+/* ── Carousel 3D coverflow ───────────────────────────────────── */
+.carousel-3d {
   position: relative;
-  overflow: hidden;
-  padding: 0.5rem 0 2.5rem;
-}
-.photo-reel::before,
-.photo-reel::after {
-  content: "";
-  position: absolute;
-  top: 0;
-  bottom: 0;
-  width: 100px;
-  z-index: 2;
-  pointer-events: none;
-}
-.photo-reel::before {
-  left: 0;
-  background: linear-gradient(to right, var(--bg-alt) 0%, transparent 100%);
-}
-.photo-reel::after {
-  right: 0;
-  background: linear-gradient(to left, var(--bg-alt) 0%, transparent 100%);
-}
-.photo-reel-track {
+  height: 400px;
+  perspective: 1200px;
   display: flex;
-  gap: 0.75rem;
-  width: max-content;
-  animation: photo-marquee 30s linear infinite;
-}
-.photo-reel:hover .photo-reel-track { animation-play-state: paused; }
-
-@keyframes photo-marquee {
-  from { transform: translateX(0); }
-  to   { transform: translateX(-50%); }
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+  margin: 0.5rem 0 2.5rem;
+  mask-image: linear-gradient(to right, transparent 0%, black 20%, black 80%, transparent 100%);
+  -webkit-mask-image: linear-gradient(to right, transparent 0%, black 20%, black 80%, transparent 100%);
 }
 
-.photo-reel-card {
-  flex-shrink: 0;
-  width: clamp(180px, 26vw, 240px);
-  aspect-ratio: 3/4;
-  border-radius: 16px;
+.carousel-card {
+  position: absolute;
+  width: 220px;
+  height: 340px;
+  border-radius: 18px;
   overflow: hidden;
   border: 1px solid var(--border);
+  transform-origin: center center;
+  will-change: transform, opacity;
+  backface-visibility: hidden;
+  -webkit-backface-visibility: hidden;
 }
-.photo-reel-card img {
+
+.carousel-card img {
   width: 100%;
   height: 100%;
   object-fit: cover;
   object-position: center 18%;
-  display: block;
   filter: saturate(0.85) contrast(1.03);
-  transition: transform 600ms ease;
+  display: block;
 }
-.photo-reel-card:hover img { transform: scale(1.03); }
 
 /* Testimonials */
 .testimonials-grid {
@@ -1087,15 +1112,16 @@ h1 span { color: var(--accent); }
     max-width: 380px;
   }
   .phone-demo-copy .eyebrow { display: block; }
-  .phone-demo-frame { flex-shrink: 0; width: 300px; }
+  .phone-demo-frame { flex-shrink: 0; width: 280px; }
   .phone-demo-steps {
     grid-template-columns: 1fr;
     gap: 1.2rem;
   }
   .demo-step { align-items: flex-start; text-align: left; }
 
-  /* Photo reel + testimonials */
-  .photo-reel-card { width: clamp(200px, 22vw, 260px); }
+  /* Carousel + testimonials */
+  .carousel-3d { height: 440px; }
+  .carousel-card { width: 250px; height: 380px; }
   .testimonials-grid { grid-template-columns: repeat(3, 1fr); }
 
   /* Split */
@@ -1105,7 +1131,7 @@ h1 span { color: var(--accent); }
   }
   .split-copy h2 { font-size: clamp(3rem, 6vw, 5rem); }
   .split-phone { justify-content: flex-start; }
-  .split-phone .phone-frame { max-width: 300px; }
+  .split-phone .phone-mockup { max-width: 300px; }
 
   /* Conversion */
   .conversion-inner {
@@ -1144,16 +1170,16 @@ h1 span { color: var(--accent); }
 
 /* ─── Accessibility ──────────────────────────────────────────── */
 @media (prefers-reduced-motion: reduce) {
-  .photo-reel-track,
   .brand-marquee-track { animation: none; }
   .immersive-img { animation: none; transform: scale(1.02); }
   .hero-float-top,
   .hero-float-diag { animation: none; }
+  .carousel-card { transition: none !important; }
 }
 
 /* ─── LARGE ≥1024px ──────────────────────────────────────────── */
 @media (min-width: 1024px) {
   .hero-section { padding: 6rem 0; }
   .hero-container { grid-template-columns: minmax(0, 1.05fr) minmax(0, 0.95fr); gap: 5rem; }
-  .photo-reel-card { width: 260px; }
+  .carousel-card { width: 260px; height: 400px; }
 }

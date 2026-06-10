@@ -118,27 +118,69 @@ function ProductList({ products }: { products: Product[] }) {
   );
 }
 
-/* ── Phone frame réutilisable ─────────────────────────────────── */
-function PhoneFrame() {
+/* ── Phone mockup réaliste ────────────────────────────────────── */
+function PhoneMockup() {
   return (
-    <div className="phone-frame">
-      <div className="phone-topbar">
-        <span>Skinlu</span>
-        <b>IA</b>
+    <div className="phone-mockup">
+      <div className="phone-island" />
+      <div className="phone-screen">
+        <div className="pms-topbar">
+          <span>Skinlu</span>
+          <b>IA</b>
+        </div>
+        <div className="pms-priority">
+          <small>Priorité peau</small>
+          <strong>Déshydratation</strong>
+        </div>
+        <div className="pms-metrics">
+          <div><span>Hydratation</span><b>Faible</b></div>
+          <div><span>Pores visibles</span><b>Modéré</b></div>
+          <div><span>Sensibilité</span><b>Élevée</b></div>
+        </div>
+        <div className="pms-routine">
+          <span>Routine proposée</span>
+          <strong>Cleanser · Sérum · SPF</strong>
+        </div>
       </div>
-      <div className="phone-score">
-        <small>Priorité peau</small>
-        <strong>Déshydratation</strong>
-      </div>
-      <div className="phone-metrics">
-        <div><span>Hydratation</span><b>Faible</b></div>
-        <div><span>Pores visibles</span><b>Modéré</b></div>
-        <div><span>Sensibilité</span><b>Élevée</b></div>
-      </div>
-      <div className="phone-routine">
-        <span>Routine proposée</span>
-        <b>Cleanser · Sérum · SPF</b>
-      </div>
+    </div>
+  );
+}
+
+/* ── Carousel 3D coverflow ────────────────────────────────────── */
+function PhotoCarousel() {
+  const faces = [
+    "/faces/face-01.png",
+    "/faces/face-03.png",
+    "/faces/face-04.png",
+    "/faces/face-02.png",
+  ];
+  const n = faces.length;
+  const [active, setActive] = useState(0);
+
+  useEffect(() => {
+    const id = setInterval(() => setActive((a) => (a + 1) % n), 2800);
+    return () => clearInterval(id);
+  }, [n]);
+
+  return (
+    <div className="carousel-3d" aria-hidden="true">
+      {faces.map((src, i) => {
+        let offset = i - active;
+        if (offset > n / 2) offset -= n;
+        if (offset < -n / 2) offset += n;
+        const abs = Math.abs(offset);
+        const style: React.CSSProperties = {
+          transform: `translateX(${offset * 255}px) rotateY(${offset * -28}deg) scale(${1 - abs * 0.16})`,
+          opacity: Math.max(0, 1 - abs * 0.38),
+          zIndex: 10 - abs,
+          transition: "transform 0.65s cubic-bezier(0.25, 0.1, 0.25, 1), opacity 0.65s ease",
+        };
+        return (
+          <div key={src} className="carousel-card" style={style}>
+            <img src={src} alt="" />
+          </div>
+        );
+      })}
     </div>
   );
 }
@@ -417,7 +459,7 @@ export default function Home() {
               <a href="#diagnostic" className="hero-cta">Commencer gratuitement</a>
             </div>
             <div className="phone-demo-frame reveal reveal-delay-1">
-              <PhoneFrame />
+              <PhoneMockup />
             </div>
           </div>
         </div>
@@ -432,20 +474,7 @@ export default function Home() {
           </div>
         </div>
 
-        {/* Défilement infini des photos */}
-        <div className="photo-reel" aria-hidden="true">
-          <div className="photo-reel-track">
-            <div className="photo-reel-card"><img src="/faces/face-01.png" alt="" /></div>
-            <div className="photo-reel-card"><img src="/faces/face-03.png" alt="" /></div>
-            <div className="photo-reel-card"><img src="/faces/face-04.png" alt="" /></div>
-            <div className="photo-reel-card"><img src="/faces/face-02.png" alt="" /></div>
-            {/* Duplicats pour boucle parfaite */}
-            <div className="photo-reel-card"><img src="/faces/face-01.png" alt="" /></div>
-            <div className="photo-reel-card"><img src="/faces/face-03.png" alt="" /></div>
-            <div className="photo-reel-card"><img src="/faces/face-04.png" alt="" /></div>
-            <div className="photo-reel-card"><img src="/faces/face-02.png" alt="" /></div>
-          </div>
-        </div>
+        <PhotoCarousel />
 
         {/* Cartes avis séparées */}
         <div className="container">
@@ -485,7 +514,7 @@ export default function Home() {
             </a>
           </div>
           <div className="split-phone reveal reveal-delay-1">
-            <PhoneFrame />
+            <PhoneMockup />
           </div>
         </div>
       </section>
