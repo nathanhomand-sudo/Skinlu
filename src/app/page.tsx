@@ -393,38 +393,31 @@ export default function Home() {
         </div>
       </section>
 
-      {/* ── 3. PHONE DEMO + MARQUES ──────────────────────────────── */}
+      {/* ── 3. PHONE DEMO ────────────────────────────────────────── */}
       <section className="phone-demo-section">
         <div className="container">
-          <div className="section-heading section-heading--center reveal">
-            <span className="eyebrow">Comment ça marche</span>
-            <h2>Toute ta routine,<br />d&apos;un seul selfie.</h2>
-          </div>
           <div className="phone-demo-layout">
-            <div className="phone-demo-brands reveal reveal-delay-1">
-              <span>CeraVe</span>
-              <span>La Roche-Posay</span>
-              <span>Vichy</span>
-              <span>Avène</span>
-              <span>The Ordinary</span>
-              <span>Bioderma</span>
+            <div className="phone-demo-copy reveal">
+              <span className="eyebrow">Comment ça marche</span>
+              <h2>Toute ta routine,<br />d&apos;un seul selfie.</h2>
+              <div className="phone-demo-steps">
+                <div className="demo-step">
+                  <b>01</b>
+                  <span>Ajoute ton selfie</span>
+                </div>
+                <div className="demo-step">
+                  <b>02</b>
+                  <span>L&apos;IA analyse ta peau</span>
+                </div>
+                <div className="demo-step">
+                  <b>03</b>
+                  <span>Reçois ta routine sur mesure</span>
+                </div>
+              </div>
+              <a href="#diagnostic" className="hero-cta">Commencer gratuitement</a>
             </div>
-            <div className="phone-demo-frame reveal">
+            <div className="phone-demo-frame reveal reveal-delay-1">
               <PhoneFrame />
-            </div>
-            <div className="phone-demo-steps reveal reveal-delay-2">
-              <div className="demo-step">
-                <b>01</b>
-                <span>Ajoute ton selfie</span>
-              </div>
-              <div className="demo-step">
-                <b>02</b>
-                <span>L&apos;IA analyse ta peau</span>
-              </div>
-              <div className="demo-step">
-                <b>03</b>
-                <span>Reçois ta routine sur mesure</span>
-              </div>
             </div>
           </div>
         </div>
