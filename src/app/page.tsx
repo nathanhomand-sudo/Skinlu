@@ -374,8 +374,7 @@ export default function Home() {
               <span className="hero-accent">besoin.</span>
             </p>
             <p className="lead">
-              Un selfie. 30 secondes. Une routine faite pour toi —{" "}
-              pas pour une peau générique.
+              Un selfie. 30 secondes. Une routine faite pour toi.
             </p>
             <div className="trust-strip">
               <span>Aperçu gratuit</span>
