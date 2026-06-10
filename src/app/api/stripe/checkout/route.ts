@@ -63,9 +63,7 @@ export async function POST(request: Request) {
       metadata: {
         sessionToken,
       },
-      success_url: `${origin}/?payment=success&session_token=${encodeURIComponent(
-        sessionToken,
-      )}`,
+      success_url: `${origin}/routine/${encodeURIComponent(sessionToken)}`,
       cancel_url: `${origin}/?payment=cancelled`,
     });
 
