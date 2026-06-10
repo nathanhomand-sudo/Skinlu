@@ -150,9 +150,8 @@ function PhoneMockup() {
 function PhotoCarousel() {
   const faces = [
     "/faces/face-01.png",
-    "/faces/face-03.png",
-    "/faces/face-04.png",
     "/faces/face-02.png",
+    "/faces/face-03.png",
   ];
   const n = faces.length;
   const [active, setActive] = useState(0);
@@ -696,7 +695,7 @@ export default function Home() {
       {/* ── 8. BANNIÈRE IMMERSIVE ────────────────────────────────── */}
       <section className="immersive-section" aria-label="Ambiance Skinlu">
         <div className="immersive-banner reveal">
-          <img src="/faces/face-04.png" alt="" aria-hidden="true" className="immersive-img" />
+          <img src="/faces/banner.png" alt="" aria-hidden="true" className="immersive-img" />
           <div className="immersive-overlay">
             <div className="container">
               <span className="eyebrow">Skin first</span>
