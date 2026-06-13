@@ -3,7 +3,6 @@
 /* eslint-disable @next/next/no-img-element */
 
 import {
-  ChangeEvent,
   FormEvent,
   useCallback,
   useEffect,
@@ -13,6 +12,7 @@ import {
 import type { Product } from "@/lib/matching";
 import type { Concern } from "@/lib/skin-diagnostic";
 import type { SkinType } from "@/lib/visual-age";
+import SkinScanCabin from "@/components/SkinScanCabin";
 
 const ACCEPTED_TYPES = ["image/jpeg", "image/png", "image/webp"];
 const MAX_FILE_SIZE = 4 * 1024 * 1024;
@@ -206,11 +206,6 @@ export default function Home() {
   );
   const [routine, setRoutine] = useState<RoutineReport | null>(null);
 
-  const helperText = useMemo(() => {
-    if (!selfie) return "Selfie net, visage bien éclairé. JPG, PNG ou WebP. 4 MB max.";
-    return `Selfie prêt · ${formatBytes(selfie.size)}`;
-  }, [selfie]);
-
   useEffect(() => {
     return () => {
       if (previewUrl?.startsWith('blob:')) URL.revokeObjectURL(previewUrl);
@@ -245,30 +240,6 @@ export default function Home() {
   }, []);
 
   function clearPaidState() { setRoutine(null); }
-
-  function handleSelfieChange(event: ChangeEvent<HTMLInputElement>) {
-    const nextFile = event.target.files?.[0] ?? null;
-    setError(null);
-    setDiagnostic(null);
-    clearPaidState();
-    window.localStorage.removeItem(DIAGNOSTIC_STORAGE_KEY);
-
-    if (!nextFile) { setSelfie(null); setPreviewUrl(null); return; }
-
-    const validationError = validateFile(nextFile);
-    if (validationError) {
-      setSelfie(null); setPreviewUrl(null);
-      setError(validationError);
-      event.target.value = "";
-      return;
-    }
-
-    setSelfie(nextFile);
-    // Use FileReader (data URL) — more reliable than createObjectURL on iOS Safari
-    const reader = new FileReader();
-    reader.onload = (e) => setPreviewUrl(e.target?.result as string ?? null);
-    reader.readAsDataURL(nextFile);
-  }
 
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -618,22 +589,23 @@ export default function Home() {
                   <strong>4 MB max</strong>
                 </div>
                 <form onSubmit={handleSubmit} className="upload-form">
-                  <div className="selfie-picker">
-                    {previewUrl ? (
-                      <label className="drop-zone has-preview">
-                        <input type="file" name="selfie" accept="image/jpeg,image/png,image/webp" onChange={handleSelfieChange} />
-                        <img src={previewUrl} alt="Preview du selfie" className="photo-preview" />
-                      </label>
-                    ) : (
-                      <label className="drop-zone">
-                        <input type="file" name="selfie" accept="image/jpeg,image/png,image/webp" onChange={handleSelfieChange} />
-                        <span className="drop-zone-empty">
-                          <strong>Ajouter une photo</strong>
-                          <span>{helperText}</span>
-                        </span>
-                      </label>
-                    )}
-                  </div>
+                  <SkinScanCabin
+                    onSelfieSelected={(file) => {
+                      setError(null);
+                      setDiagnostic(null);
+                      clearPaidState();
+                      window.localStorage.removeItem(DIAGNOSTIC_STORAGE_KEY);
+                      if (!file) { setSelfie(null); setPreviewUrl(null); return; }
+                      setSelfie(file);
+                      // FileReader (data URL) — more reliable than createObjectURL on iOS Safari
+                      const reader = new FileReader();
+                      reader.onload = (e) => setPreviewUrl(e.target?.result as string ?? null);
+                      reader.readAsDataURL(file);
+                    }}
+                    onError={(msg) => setError(msg)}
+                    previewUrl={previewUrl}
+                    disabled={loading}
+                  />
                   {previewUrl && selfie ? <p className="file-meta">{formatBytes(selfie.size)}</p> : null}
                   <p className="upload-reassurance">Ton selfie est analysé puis supprimé. Jamais stocké.</p>
                   {error ? <p className="form-error">{error}</p> : null}
