@@ -98,9 +98,6 @@ function getStoredDiagnostic() {
   }
 }
 
-function formatBytes(bytes: number) {
-  return `${(bytes / (1024 * 1024)).toFixed(2)} MB`;
-}
 
 function validateFile(file: File) {
   if (!ACCEPTED_TYPES.includes(file.type))
@@ -392,14 +389,12 @@ export default function Home() {
     setSkinProfile((current) => ({ ...current, [key]: value }));
   }
 
-  async function handleSubmit(event: FormEvent<HTMLFormElement>) {
-    event.preventDefault();
-    if (!selfie) { setError("Ajoute ton selfie avant de lancer l'analyse."); return; }
-    const validationError = validateFile(selfie);
+  async function runAnalysis(file: File) {
+    const validationError = validateFile(file);
     if (validationError) { setError(validationError); return; }
 
     const body = new FormData();
-    body.append("selfie", selfie);
+    body.append("selfie", file);
     if (Object.keys(skinProfile).length > 0) {
       body.append("skin_profile", JSON.stringify(skinProfile));
     }
@@ -444,6 +439,10 @@ export default function Home() {
           : caughtError instanceof Error ? caughtError.message : "Une erreur inattendue est survenue.",
       );
     } finally { setLoading(false); }
+  }
+
+  function handleSubmit(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
   }
 
   async function startCheckout() {
@@ -551,9 +550,9 @@ export default function Home() {
           {/* Copy — first in DOM for a11y, shown below visual on mobile */}
           <div className="hero-copy">
             <div className="eyebrow hero-eyebrow">Skinlu = la fin du skincare au hasard</div>
-            <h1 id="product-title">Découvre enfin ce dont ta peau a vraiment besoin.</h1>
+            <h1 id="product-title">Arrête d&apos;acheter ta skincare au hasard.</h1>
             <p className="lead">
-              Avant d&apos;acheter encore un produit viral, vérifie si ta peau en a vraiment besoin.
+              TikTok te montre quoi acheter. Skinlu t&apos;aide à savoir si ça a vraiment du sens pour toi.
             </p>
             <div className="trust-strip">
               <span>Gratuit</span>
@@ -561,6 +560,9 @@ export default function Home() {
               <span>Sans compte</span>
               <span>Analyse cosmétique indicative</span>
             </div>
+            <p className="hero-microcopy">
+              Avant d&apos;acheter encore un produit viral, vérifie si ta peau en a vraiment besoin.
+            </p>
             <a href="#diagnostic" className="hero-cta" onClick={() => track("hero_cta_click")}>
               Faire mon scan gratuit
             </a>
@@ -820,21 +822,17 @@ export default function Home() {
                       const reader = new FileReader();
                       reader.onload = (e) => setPreviewUrl(e.target?.result as string ?? null);
                       reader.readAsDataURL(file);
+                      void runAnalysis(file);
                     }}
                     onError={(msg) => setError(msg)}
                     previewUrl={previewUrl}
                     disabled={loading}
                   />
-                  {previewUrl && selfie ? <p className="file-meta">{formatBytes(selfie.size)}</p> : null}
                   <p className="upload-reassurance">
                     Analyse cosmétique indicative. Ne remplace pas l&apos;avis d&apos;un professionnel de santé.
                   </p>
                   {error ? <p className="form-error">{error}</p> : null}
                   <UrgencyCounter />
-                  <button className="analyze-button" type="submit" disabled={loading}>
-                    {loading ? "Analyse en cours..." : "Lancer mon analyse gratuite"}
-                  </button>
-                  <p className="cta-microcopy">Gratuit · 30s · sans compte</p>
                 </form>
 
 
