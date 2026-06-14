@@ -760,7 +760,7 @@ export default function Home() {
             <div className="conversion-sticky">
               <div className="section-heading">
                 <span className="eyebrow">Scan gratuit</span>
-                <h2>Vérifie ta routine avant ton prochain achat viral.</h2>
+                <h2>Analyse ta peau. Gratuit, en 30 secondes.</h2>
               </div>
             </div>
             <div>
@@ -769,34 +769,10 @@ export default function Home() {
                   <span>Cabine de scan</span>
                 </div>
                 <form onSubmit={handleSubmit} className="upload-form">
-                  <SkinScanCabin
-                    onSelfieSelected={async (file) => {
-                      setError(null);
-                      setDiagnostic(null);
-                      clearPaidState();
-                      window.localStorage.removeItem(DIAGNOSTIC_STORAGE_KEY);
-                      if (!file) { setSelfie(null); setPreviewUrl(null); return; }
-                      const qualityWarning = await getImageQualityWarning(file);
-                      if (qualityWarning) {
-                        setSelfie(null);
-                        setPreviewUrl(null);
-                        setError(qualityWarning);
-                        return;
-                      }
-                      setSelfie(file);
-                      // FileReader (data URL) — more reliable than createObjectURL on iOS Safari
-                      const reader = new FileReader();
-                      reader.onload = (e) => setPreviewUrl(e.target?.result as string ?? null);
-                      reader.readAsDataURL(file);
-                    }}
-                    onError={(msg) => setError(msg)}
-                    previewUrl={previewUrl}
-                    disabled={loading}
-                  />
-                  <div className="skin-profile-card" aria-label="Contexte peau optionnel">
+                  <div className="skin-profile-card" aria-label="Profil peau">
                     <div className="skin-profile-heading">
-                      <span>Contexte rapide</span>
-                      <strong>Pour un résultat plus précis</strong>
+                      <span>Étape 1 · Ton profil</span>
+                      <strong>3 questions pour affiner ton résultat</strong>
                     </div>
                     <div className="skin-profile-grid">
                       {PROFILE_QUESTIONS.map((item) => (
@@ -823,6 +799,32 @@ export default function Home() {
                       ))}
                     </div>
                   </div>
+                  <div className="scan-step-header">
+                    <span>Étape 2 · Selfie</span>
+                  </div>
+                  <SkinScanCabin
+                    onSelfieSelected={async (file) => {
+                      setError(null);
+                      setDiagnostic(null);
+                      clearPaidState();
+                      window.localStorage.removeItem(DIAGNOSTIC_STORAGE_KEY);
+                      if (!file) { setSelfie(null); setPreviewUrl(null); return; }
+                      const qualityWarning = await getImageQualityWarning(file);
+                      if (qualityWarning) {
+                        setSelfie(null);
+                        setPreviewUrl(null);
+                        setError(qualityWarning);
+                        return;
+                      }
+                      setSelfie(file);
+                      const reader = new FileReader();
+                      reader.onload = (e) => setPreviewUrl(e.target?.result as string ?? null);
+                      reader.readAsDataURL(file);
+                    }}
+                    onError={(msg) => setError(msg)}
+                    previewUrl={previewUrl}
+                    disabled={loading}
+                  />
                   {previewUrl && selfie ? <p className="file-meta">{formatBytes(selfie.size)}</p> : null}
                   <p className="upload-reassurance">
                     Analyse cosmétique indicative. Ne remplace pas l&apos;avis d&apos;un professionnel de santé.

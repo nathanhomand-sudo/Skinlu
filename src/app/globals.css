@@ -1018,16 +1018,18 @@ h1 span { color: var(--accent); }
   position: fixed;
   inset: 0;
   z-index: 1000;
-  background: var(--bg-main);
+  background: rgba(255, 250, 245, 0.82);
+  backdrop-filter: blur(18px) saturate(1.4);
+  -webkit-backdrop-filter: blur(18px) saturate(1.4);
   display: flex;
   align-items: center;
   justify-content: center;
   padding: 2rem;
-  animation: overlay-fade-in 280ms ease;
+  animation: overlay-fade-in 320ms ease;
 }
 @keyframes overlay-fade-in {
-  from { opacity: 0; }
-  to   { opacity: 1; }
+  from { opacity: 0; transform: scale(0.98); }
+  to   { opacity: 1; transform: scale(1); }
 }
 .analysis-overlay-inner {
   display: flex;
@@ -1944,20 +1946,18 @@ h1 span { color: var(--accent); }
 
 /* ─── Scan Cabin ─────────────────────────────────────────────── */
 
-/* Idle: CTA + upload fallback */
-.scan-cabin-idle { display: grid; gap: 1rem; }
-
-.scan-cabin-cta-wrap { display: grid; gap: 0.35rem; text-align: center; }
+/* Idle: single camera CTA + upload text link */
+.scan-cabin-idle { display: grid; gap: 0.75rem; text-align: center; }
 
 .scan-cabin-cta {
   display: block;
   width: 100%;
-  padding: 0.9rem 1.5rem;
+  padding: 1rem 1.5rem;
   background: var(--text-primary);
   color: #fff;
   border: none;
   border-radius: 10px;
-  font-size: 1rem;
+  font-size: 1.05rem;
   font-weight: 700;
   cursor: pointer;
   text-align: center;
@@ -1970,28 +1970,52 @@ h1 span { color: var(--accent); }
 }
 .scan-cabin-cta:disabled { opacity: 0.55; cursor: not-allowed; }
 
-.scan-cabin-cta-sub { color: var(--text-secondary); font-size: 0.8rem; }
-
-.scan-cabin-or {
+/* Upload as small text link — fallback only */
+.scan-cabin-upload-link {
   position: relative;
-  text-align: center;
-  color: var(--muted);
-  font-size: 0.82rem;
-  line-height: 1;
-  padding: 0.15rem 0;
+  display: inline-block;
+  color: var(--text-secondary);
+  font-size: 0.84rem;
+  cursor: pointer;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+  transition: color 150ms;
 }
-.scan-cabin-or::before,
-.scan-cabin-or::after {
-  content: "";
+.scan-cabin-upload-link:hover { color: var(--text-primary); }
+.scan-cabin-upload-link input {
   position: absolute;
-  top: 50%;
-  transform: translateY(-50%);
-  height: 1px;
-  width: calc(50% - 1.5rem);
-  background: var(--border);
+  inset: 0;
+  opacity: 0;
+  cursor: pointer;
+  font-size: 0;
 }
-.scan-cabin-or::before { left: 0; }
-.scan-cabin-or::after  { right: 0; }
+
+/* Step header above camera */
+.scan-step-header {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding-top: 0.25rem;
+}
+.scan-step-header span {
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--accent);
+}
+
+/* Auto-capture progress bar at bottom of viewport */
+.scan-cabin-auto-bar {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  height: 3px;
+  background: linear-gradient(to right, var(--accent), rgba(122, 244, 190, 0.85));
+  border-radius: 0 0 0 12px;
+  transition: width 50ms linear;
+  z-index: 3;
+}
 
 .scan-cabin-error {
   color: var(--danger);
@@ -2523,9 +2547,7 @@ h1 span { color: var(--accent); }
   grid-template-columns: repeat(2, minmax(0, 1fr));
 }
 .analysis-overlay {
-  background:
-    radial-gradient(circle at 50% 34%, rgba(15, 107, 95, 0.18), transparent 34%),
-    linear-gradient(180deg, #fffaf5, var(--bg-main));
+  background: rgba(255, 250, 245, 0.82);
 }
 .analysis-overlay-inner {
   max-width: 360px;
