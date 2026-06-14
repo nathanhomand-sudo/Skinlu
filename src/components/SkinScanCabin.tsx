@@ -2,16 +2,24 @@
 
 /* eslint-disable @next/next/no-img-element */
 
-import { ChangeEvent, useEffect, useRef, useState } from "react";
+import { ChangeEvent, useEffect, useMemo, useRef, useState } from "react";
+import type { FaceDetector as MediaPipeFaceDetector } from "@mediapipe/tasks-vision";
+import { track } from "@/lib/track";
 
 const ACCEPTED_TYPES = ["image/jpeg", "image/png", "image/webp"];
 const MAX_FILE_SIZE = 4 * 1024 * 1024;
+const MEDIAPIPE_WASM_URL =
+  "https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@0.10.35/wasm";
+const FACE_DETECTOR_MODEL_URL =
+  "https://storage.googleapis.com/mediapipe-models/face_detector/blaze_face_short_range/float16/latest/blaze_face_short_range.tflite";
 
 function validateFile(file: File): string | null {
-  if (!ACCEPTED_TYPES.includes(file.type))
+  if (!ACCEPTED_TYPES.includes(file.type)) {
     return "Format invalide. Utilisez une photo JPG, PNG ou WebP.";
-  if (file.size > MAX_FILE_SIZE)
+  }
+  if (file.size > MAX_FILE_SIZE) {
     return "Fichier trop lourd. La taille maximale est de 4 MB.";
+  }
   return null;
 }
 
@@ -32,18 +40,64 @@ export default function SkinScanCabin({
   const [lightOk, setLightOk] = useState<boolean | null>(null);
   const [cameraError, setCameraError] = useState<string | null>(null);
   const [isCapturing, setIsCapturing] = useState(false);
+  const [scanProgress, setScanProgress] = useState(0);
+  const [faceGuide, setFaceGuide] = useState<{
+    label: string;
+    detail: string;
+    ready: boolean;
+  } | null>(null);
+  const [mediaPipeStatus, setMediaPipeStatus] = useState<"idle" | "loading" | "ready" | "fallback">("idle");
   const videoRef = useRef<HTMLVideoElement>(null);
   const streamRef = useRef<MediaStream | null>(null);
+  const detectorRef = useRef<MediaPipeFaceDetector | null>(null);
+  const stableFaceSinceRef = useRef<number | null>(null);
 
   function stopStream() {
-    streamRef.current?.getTracks().forEach((t) => t.stop());
+    streamRef.current?.getTracks().forEach((track) => track.stop());
     streamRef.current = null;
   }
 
-  // Stop camera on unmount (guarantee — no camera ghost)
   useEffect(() => () => stopStream(), []);
 
-  // Attach stream to <video> and run light check when cabine is active
+  useEffect(() => {
+    let cancelled = false;
+
+    async function loadFaceDetector() {
+      if (detectorRef.current || mediaPipeStatus === "loading" || mediaPipeStatus === "ready") {
+        return;
+      }
+
+      setMediaPipeStatus("loading");
+      try {
+        const { FaceDetector, FilesetResolver } = await import("@mediapipe/tasks-vision");
+        const vision = await FilesetResolver.forVisionTasks(MEDIAPIPE_WASM_URL);
+        const detector = await FaceDetector.createFromOptions(vision, {
+          baseOptions: { modelAssetPath: FACE_DETECTOR_MODEL_URL },
+          runningMode: "VIDEO",
+          minDetectionConfidence: 0.45,
+        });
+
+        if (cancelled) {
+          detector.close();
+          return;
+        }
+
+        detectorRef.current = detector;
+        setMediaPipeStatus("ready");
+      } catch {
+        if (!cancelled) setMediaPipeStatus("fallback");
+      }
+    }
+
+    if (mode === "cabine") {
+      void loadFaceDetector();
+    }
+
+    return () => {
+      cancelled = true;
+    };
+  }, [mediaPipeStatus, mode]);
+
   useEffect(() => {
     if (mode !== "cabine") return;
 
@@ -51,47 +105,214 @@ export default function SkinScanCabin({
       videoRef.current.srcObject = streamRef.current;
     }
 
+    const startedAt = Date.now();
     const intervalId = window.setInterval(() => {
-      const v = videoRef.current;
-      if (!v || v.readyState < v.HAVE_ENOUGH_DATA) return;
-      const S = 64;
+      const video = videoRef.current;
+      if (!video || video.readyState < video.HAVE_ENOUGH_DATA) return;
+
+      const sampleSize = 64;
       const canvas = document.createElement("canvas");
-      canvas.width = S;
-      canvas.height = S;
-      const ctx = canvas.getContext("2d");
-      if (!ctx) return;
-      ctx.drawImage(v, 0, 0, S, S);
-      const { data } = ctx.getImageData(0, 0, S, S);
-      let sum = 0;
+      canvas.width = sampleSize;
+      canvas.height = sampleSize;
+      const context = canvas.getContext("2d");
+      if (!context) return;
+
+      context.drawImage(video, 0, 0, sampleSize, sampleSize);
+      const { data } = context.getImageData(0, 0, sampleSize, sampleSize);
+      let brightness = 0;
       for (let i = 0; i < data.length; i += 4) {
-        sum += 0.299 * data[i] + 0.587 * data[i + 1] + 0.114 * data[i + 2];
+        brightness += 0.299 * data[i] + 0.587 * data[i + 1] + 0.114 * data[i + 2];
       }
-      setLightOk(sum / (data.length / 4) > 50);
-    }, 400);
+
+      const averageBrightness = brightness / (data.length / 4);
+      const hasEnoughLight = averageBrightness > 52;
+      setLightOk(hasEnoughLight);
+      setScanProgress(hasEnoughLight ? Date.now() - startedAt : 0);
+
+      const detector = detectorRef.current;
+      if (!detector) return;
+
+      try {
+        const result = detector.detectForVideo(video, performance.now());
+        const detection = result.detections[0];
+
+        if (!detection?.boundingBox) {
+          stableFaceSinceRef.current = null;
+          setFaceGuide({
+            label: "Visage non détecté",
+            detail: "Place ton visage face caméra, sans lunettes sombres ni main devant.",
+            ready: false,
+          });
+          return;
+        }
+
+        const box = detection.boundingBox;
+        const videoWidth = video.videoWidth || 1;
+        const videoHeight = video.videoHeight || 1;
+        const centerX = (box.originX + box.width / 2) / videoWidth;
+        const centerY = (box.originY + box.height / 2) / videoHeight;
+        const widthRatio = box.width / videoWidth;
+        const centerOffsetX = Math.abs(centerX - 0.5);
+        const centerOffsetY = Math.abs(centerY - 0.48);
+
+        const keypoints = detection.keypoints ?? [];
+        const leftEye = keypoints[0];
+        const rightEye = keypoints[1];
+        const tilt =
+          leftEye && rightEye
+            ? Math.abs(Math.atan2(leftEye.y - rightEye.y, leftEye.x - rightEye.x) * (180 / Math.PI))
+            : 0;
+        const normalizedTilt = Math.min(tilt, Math.abs(180 - tilt));
+
+        let nextGuide = {
+          label: "Parfait, ne bouge plus",
+          detail: "Le visage est bien cadré. Garde la lumière stable.",
+          ready: hasEnoughLight,
+        };
+
+        if (!hasEnoughLight) {
+          stableFaceSinceRef.current = null;
+          nextGuide = {
+            label: "Lumière insuffisante",
+            detail: "Tourne-toi vers une fenêtre ou une source de lumière.",
+            ready: false,
+          };
+        } else if (widthRatio < 0.26) {
+          stableFaceSinceRef.current = null;
+          nextGuide = {
+            label: "Rapproche-toi légèrement",
+            detail: "Ton visage doit remplir un peu plus le cadre.",
+            ready: false,
+          };
+        } else if (widthRatio > 0.62) {
+          stableFaceSinceRef.current = null;
+          nextGuide = {
+            label: "Recule un peu",
+            detail: "Garde le visage entier dans l'ovale.",
+            ready: false,
+          };
+        } else if (centerOffsetX > 0.13 || centerOffsetY > 0.16) {
+          stableFaceSinceRef.current = null;
+          nextGuide = {
+            label: "Centre ton visage",
+            detail: "Aligne ton visage avec le guide.",
+            ready: false,
+          };
+        } else if (normalizedTilt > 12) {
+          stableFaceSinceRef.current = null;
+          nextGuide = {
+            label: "Garde le visage droit",
+            detail: "Redresse légèrement la tête pour une capture plus nette.",
+            ready: false,
+          };
+        } else {
+          stableFaceSinceRef.current ??= Date.now();
+          const stableFor = Date.now() - stableFaceSinceRef.current;
+          nextGuide =
+            stableFor > 900
+              ? {
+                  label: "Scan prêt",
+                  detail: "Tu peux capturer ton selfie.",
+                  ready: true,
+                }
+              : nextGuide;
+        }
+
+        setFaceGuide(nextGuide);
+      } catch {
+        setMediaPipeStatus("fallback");
+      }
+    }, 350);
 
     return () => window.clearInterval(intervalId);
   }, [mode]);
 
+  const scanState = useMemo(() => {
+    if (faceGuide && mediaPipeStatus === "ready") return faceGuide;
+
+    if (lightOk === false) {
+      return {
+        label: "Lumière insuffisante",
+        detail: "Tourne-toi vers une fenêtre ou une source de lumière.",
+        ready: false,
+      };
+    }
+
+    if (scanProgress < 900) {
+      return {
+        label: "Place ton visage dans le cadre",
+        detail: "Regarde droit devant toi, visage bien visible.",
+        ready: false,
+      };
+    }
+
+    if (scanProgress < 1800) {
+      return {
+        label: "Rapproche-toi légèrement",
+        detail: "Garde le visage dans le guide, sans couper le front.",
+        ready: false,
+      };
+    }
+
+    if (scanProgress < 2800) {
+      return {
+        label: "Garde le visage bien visible",
+        detail: "Évite les mains, lunettes sombres ou cheveux devant le visage.",
+        ready: false,
+      };
+    }
+
+    if (scanProgress < 3800) {
+      return {
+        label: "Parfait, ne bouge plus",
+        detail: "La capture sera plus nette si tu restes stable.",
+        ready: true,
+      };
+    }
+
+    return {
+      label: "Scan prêt",
+      detail: "Tu peux capturer ton selfie.",
+      ready: true,
+    };
+  }, [faceGuide, lightOk, mediaPipeStatus, scanProgress]);
+
   async function openCabine() {
     if (streamRef.current || mode === "cabine") return;
+
+    track("camera_permission_requested");
     setCameraError(null);
     setLightOk(null);
+    setScanProgress(0);
+    setFaceGuide(null);
+    stableFaceSinceRef.current = null;
 
     if (!navigator.mediaDevices?.getUserMedia) {
+      track("camera_permission_denied", { reason: "api_unavailable" });
       setCameraError("Caméra non disponible. Importe une photo ci-dessous.");
       return;
     }
 
     try {
       const stream = await navigator.mediaDevices.getUserMedia({
-        video: { facingMode: "user" },
+        video: {
+          facingMode: "user",
+          width: { ideal: 1080 },
+          height: { ideal: 1440 },
+        },
       });
       streamRef.current = stream;
       setMode("cabine");
-    } catch (err) {
-      const name = err instanceof Error ? err.name : "";
+      track("camera_permission_granted");
+    } catch (error) {
+      const name = error instanceof Error ? error.name : "";
+      const permissionDenied =
+        name === "NotAllowedError" || name === "PermissionDeniedError";
+      track("camera_permission_denied", {
+        reason: permissionDenied ? "permission_denied" : "unavailable",
+      });
       setCameraError(
-        name === "NotAllowedError" || name === "PermissionDeniedError"
+        permissionDenied
           ? "Accès caméra refusé. Importe une photo ci-dessous."
           : "Caméra indisponible. Importe une photo ci-dessous.",
       );
@@ -102,6 +323,9 @@ export default function SkinScanCabin({
     stopStream();
     setMode("idle");
     setLightOk(null);
+    setScanProgress(0);
+    setFaceGuide(null);
+    stableFaceSinceRef.current = null;
     setIsCapturing(false);
   }
 
@@ -110,20 +334,18 @@ export default function SkinScanCabin({
     if (!video || isCapturing) return;
     setIsCapturing(true);
 
-    // 600 ms: animation plays, then snapshot
     window.setTimeout(() => {
       const canvas = document.createElement("canvas");
-      canvas.width = video.videoWidth || 640;
-      canvas.height = video.videoHeight || 480;
-      const ctx = canvas.getContext("2d");
-      // drawImage reads raw video data (CSS mirror has no effect here)
-      if (ctx) ctx.drawImage(video, 0, 0);
+      canvas.width = video.videoWidth || 720;
+      canvas.height = video.videoHeight || 960;
+      const context = canvas.getContext("2d");
+      if (context) context.drawImage(video, 0, 0);
 
       stopStream();
       setMode("idle");
       setIsCapturing(false);
 
-      if (!ctx) {
+      if (!context) {
         onError("Capture échouée. Réessaie.");
         return;
       }
@@ -134,12 +356,17 @@ export default function SkinScanCabin({
             onError("Capture échouée. Réessaie.");
             return;
           }
+          track("selfie_captured");
           onSelfieSelected(new File([blob], "selfie.jpg", { type: "image/jpeg" }));
         },
         "image/jpeg",
         0.9,
       );
-    }, 600);
+    }, 480);
+  }
+
+  function handleUploadClick() {
+    track("upload_fallback_clicked");
   }
 
   function handleChange(event: ChangeEvent<HTMLInputElement>) {
@@ -148,17 +375,19 @@ export default function SkinScanCabin({
       onSelfieSelected(null);
       return;
     }
-    const err = validateFile(file);
-    if (err) {
+
+    const error = validateFile(file);
+    if (error) {
       event.target.value = "";
       onSelfieSelected(null);
-      onError(err);
+      onError(error);
       return;
     }
+
+    track("selfie_uploaded");
     onSelfieSelected(file);
   }
 
-  // ── Preview (after capture or file upload) ────────────────────
   if (previewUrl) {
     return (
       <div className="selfie-picker">
@@ -167,16 +396,17 @@ export default function SkinScanCabin({
             type="file"
             name="selfie"
             accept="image/jpeg,image/png,image/webp"
+            onClick={handleUploadClick}
             onChange={handleChange}
             disabled={disabled}
           />
           <img src={previewUrl} alt="Preview du selfie" className="photo-preview" />
+          <span className="drop-zone-replace">Changer la photo</span>
         </label>
       </div>
     );
   }
 
-  // ── Cabine mode ───────────────────────────────────────────────
   if (mode === "cabine") {
     return (
       <div className="selfie-picker">
@@ -189,23 +419,29 @@ export default function SkinScanCabin({
               autoPlay
               className="scan-cabin-video"
             />
-            <div className="scan-cabin-frame" />
+            <div className="scan-cabin-frame" aria-hidden="true" />
+            <div className="scan-cabin-reticle" aria-hidden="true" />
+            <div
+              className={`scan-cabin-status${
+                scanState.ready ? " is-ready" : ""
+              }`}
+            >
+              <strong>{scanState.label}</strong>
+              <span>{scanState.detail}</span>
+            </div>
             <div
               className={`scan-cabin-light${
                 lightOk === null
                   ? " light-unknown"
                   : lightOk
-                  ? " light-ok"
-                  : " light-low"
+                    ? " light-ok"
+                    : " light-low"
               }`}
             >
-              {lightOk === false ? "Lumière faible" : lightOk ? "Prêt" : ""}
+              {lightOk === false ? "Lumière faible" : lightOk ? "Lumière OK" : ""}
             </div>
             {isCapturing && <div className="scan-cabin-scan-line" />}
           </div>
-          <p className="scan-cabin-privacy">
-            Ta photo sert uniquement à générer ton analyse, elle n&apos;est pas conservée.
-          </p>
           <div className="scan-cabin-actions">
             <button
               type="button"
@@ -213,10 +449,10 @@ export default function SkinScanCabin({
               onClick={capture}
               disabled={disabled || isCapturing}
             >
-              {isCapturing ? "Capture en cours…" : "Capturer"}
+              {isCapturing ? "Capture en cours..." : scanState.ready ? "Capturer le scan" : "Capturer quand même"}
             </button>
             <button type="button" className="scan-cabin-back" onClick={closeCabine}>
-              Annuler
+              Utiliser l&apos;upload
             </button>
           </div>
         </div>
@@ -224,7 +460,6 @@ export default function SkinScanCabin({
     );
   }
 
-  // ── Idle mode : CTA cabine + upload fallback ──────────────────
   return (
     <div className="selfie-picker">
       <div className="scan-cabin-idle">
@@ -240,9 +475,11 @@ export default function SkinScanCabin({
             onClick={openCabine}
             disabled={disabled}
           >
-            Scanner mon visage
+            Ouvrir la cabine de scan
           </button>
-          <span className="scan-cabin-cta-sub">Scan guidé · Aperçu gratuit</span>
+          <span className="scan-cabin-cta-sub">
+            Caméra frontale, guide visage, capture en JPEG.
+          </span>
         </div>
         <div className="scan-cabin-or" aria-hidden="true">
           ou
@@ -252,6 +489,7 @@ export default function SkinScanCabin({
             type="file"
             name="selfie"
             accept="image/jpeg,image/png,image/webp"
+            onClick={handleUploadClick}
             onChange={handleChange}
             disabled={disabled}
           />

@@ -32,6 +32,29 @@ function imageDataUrl(buffer: ArrayBuffer, contentType: string) {
   return `data:${contentType};base64,${base64}`;
 }
 
+function formatSkinProfile(input: FormDataEntryValue | null) {
+  if (typeof input !== "string" || !input.trim()) return undefined;
+
+  try {
+    const parsed = JSON.parse(input) as Record<string, unknown>;
+    const lines: string[] = [];
+
+    if (typeof parsed.tight_after_cleansing === "string") {
+      lines.push(`- Apres nettoyage, la peau tire : ${parsed.tight_after_cleansing}`);
+    }
+    if (typeof parsed.shine_area === "string") {
+      lines.push(`- En journee, brillance surtout : ${parsed.shine_area}`);
+    }
+    if (typeof parsed.reacts_to_products === "string") {
+      lines.push(`- Reaction aux nouveaux produits : ${parsed.reacts_to_products}`);
+    }
+
+    return lines.length ? lines.join("\n") : undefined;
+  } catch {
+    return undefined;
+  }
+}
+
 export async function POST(request: Request) {
   let formData: FormData;
 
@@ -43,6 +66,7 @@ export async function POST(request: Request) {
 
   const selfie = formData.get("selfie");
   const emailInput = formData.get("email");
+  const skinProfileInput = formData.get("skin_profile");
 
   if (!(selfie instanceof File)) {
     return jsonError("selfie_required", 400);
@@ -62,6 +86,7 @@ export async function POST(request: Request) {
 
   try {
     const buffer = await selfie.arrayBuffer();
+    const skinProfileContext = formatSkinProfile(skinProfileInput);
     const client = new OpenAI({
       apiKey: process.env.OPENAI_API_KEY,
     });
@@ -75,7 +100,7 @@ export async function POST(request: Request) {
             content: [
               {
                 type: "input_text",
-                text: buildSkinDiagnosticPrompt(),
+                text: buildSkinDiagnosticPrompt(skinProfileContext),
               },
               {
                 type: "input_image",
@@ -128,7 +153,7 @@ export async function POST(request: Request) {
       concerns: diagnostic.concerns.slice(0, 2),
       top_priority: diagnostic.top_priority,
       summary: diagnostic.summary,
-      disclaimer: "Analyse cosmetique generee par IA, pas un diagnostic medical.",
+      disclaimer: "Analyse cosmetique indicative. Ne remplace pas l'avis d'un professionnel de sante.",
     });
   } catch (error) {
     console.error("skin_diagnostic_failed", error);

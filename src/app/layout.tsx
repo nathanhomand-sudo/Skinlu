@@ -16,13 +16,13 @@ const fraunces = Fraunces({
 });
 
 export const metadata: Metadata = {
-  title: "Skinlu — Diagnostic peau par IA",
+  title: "Skinlu — La fin du skincare au hasard",
   description:
-    "Un selfie suffit. Notre IA analyse ta peau et te construit une routine soin sur mesure, avec des produits multi-marques adaptés à ton type de peau.",
+    "Arrête d'acheter ta skincare au hasard. Fais un scan gratuit et obtiens une routine plus claire, sans te perdre dans le skincare bullshit.",
   openGraph: {
-    title: "Skinlu — Diagnostic peau par IA",
+    title: "Skinlu — La fin du skincare au hasard",
     description:
-      "Un selfie suffit. Notre IA analyse ta peau et te construit une routine soin sur mesure, avec des produits multi-marques adaptés à ton type de peau.",
+      "Arrête d'acheter ta skincare au hasard. Fais un scan gratuit et obtiens une routine plus claire, sans te perdre dans le skincare bullshit.",
   },
 };
 
