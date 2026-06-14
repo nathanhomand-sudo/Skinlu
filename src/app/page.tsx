@@ -309,7 +309,6 @@ export default function Home() {
   const scanEntryTracked = useRef(false);
   const [selfie, setSelfie] = useState<File | null>(null);
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
-  const [email, setEmail] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [skinProfile, setSkinProfile] = useState<SkinProfileAnswers>({});
   const [loading, setLoading] = useState(false);
@@ -401,7 +400,6 @@ export default function Home() {
 
     const body = new FormData();
     body.append("selfie", selfie);
-    if (email.trim()) body.append("email", email.trim());
     if (Object.keys(skinProfile).length > 0) {
       body.append("skin_profile", JSON.stringify(skinProfile));
     }
@@ -456,7 +454,7 @@ export default function Home() {
       const response = await fetch("/api/stripe/checkout", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ sessionToken: diagnostic.session_token, email: email.trim() || undefined }),
+        body: JSON.stringify({ sessionToken: diagnostic.session_token }),
       });
       const data = await response.json();
       if (!response.ok) throw new Error(data.error ?? "Stripe Checkout indisponible.");
@@ -553,9 +551,9 @@ export default function Home() {
           {/* Copy — first in DOM for a11y, shown below visual on mobile */}
           <div className="hero-copy">
             <div className="eyebrow hero-eyebrow">Skinlu = la fin du skincare au hasard</div>
-            <h1 id="product-title">Arrête d&apos;acheter ta skincare au hasard.</h1>
+            <h1 id="product-title">Découvre enfin ce dont ta peau a vraiment besoin.</h1>
             <p className="lead">
-              TikTok te montre quoi acheter. Skinlu t&apos;aide à savoir si ça a vraiment du sens pour toi.
+              Avant d&apos;acheter encore un produit viral, vérifie si ta peau en a vraiment besoin.
             </p>
             <div className="trust-strip">
               <span>Gratuit</span>
@@ -563,9 +561,6 @@ export default function Home() {
               <span>Sans compte</span>
               <span>Analyse cosmétique indicative</span>
             </div>
-            <p className="hero-microcopy">
-              Avant d&apos;acheter encore un produit viral, vérifie si ta peau en a vraiment besoin.
-            </p>
             <a href="#diagnostic" className="hero-cta" onClick={() => track("hero_cta_click")}>
               Faire mon scan gratuit
             </a>
@@ -610,20 +605,6 @@ export default function Home() {
             </div>
           </div>
 
-        </div>
-      </section>
-
-      {/* ── 2. TRUST BAR ─────────────────────────────────────────── */}
-      <section className="trust-section" aria-label="Chiffres Skinlu">
-        <div className="container">
-          <div className="trust-bar">
-            <div className="trust-pills">
-              <span>Skincare sans hasard</span>
-              <span>Scan gratuit en 30 sec</span>
-              <span>Pas de compte</span>
-              <span>Pas de promesse médicale</span>
-            </div>
-          </div>
         </div>
       </section>
 
@@ -786,7 +767,6 @@ export default function Home() {
               <div className="upload-panel">
                 <div className="panel-heading">
                   <span>Cabine de scan</span>
-                  <strong>4 MB max</strong>
                 </div>
                 <form onSubmit={handleSubmit} className="upload-form">
                   <SkinScanCabin
@@ -816,7 +796,7 @@ export default function Home() {
                   <div className="skin-profile-card" aria-label="Contexte peau optionnel">
                     <div className="skin-profile-heading">
                       <span>Contexte rapide</span>
-                      <strong>Optionnel, mais utile</strong>
+                      <strong>Pour un résultat plus précis</strong>
                     </div>
                     <div className="skin-profile-grid">
                       {PROFILE_QUESTIONS.map((item) => (
@@ -862,6 +842,7 @@ export default function Home() {
                       <span className="status-label">Ce que Skinlu remarque</span>
                       <strong>Analyse indicative</strong>
                     </div>
+                    <p className="preview-summary">{shortSummary(diagnostic.summary)}</p>
                     <div className="preview-cards">
                       <article className="preview-card">
                         <span>Type probable</span>
@@ -879,7 +860,6 @@ export default function Home() {
                         <small>Ordre AM/PM débloqué ci-dessous</small>
                       </article>
                     </div>
-                    <p className="preview-summary">{shortSummary(diagnostic.summary)}</p>
                     <div className="concern-list">
                       {diagnostic.concerns.map((concern) => (
                         <span key={concern} className={`concern-badge concern-badge--${concern}`}>
@@ -887,6 +867,7 @@ export default function Home() {
                         </span>
                       ))}
                     </div>
+                    <p className="routine-alert">Évite d&apos;ajouter de nouveaux produits avant d&apos;avoir clarifié ta routine.</p>
                     <div className="routine-blur-teaser" aria-hidden="true">
                       <div className="rbt-rows">
                         <div className="rbt-section-label">Matin</div>
@@ -907,20 +888,11 @@ export default function Home() {
                       <p className="paywall-subtitle">On a transformé ton analyse en un plan simple à suivre.</p>
                       <ul className="paywall-deliverables">
                         <li>Quoi appliquer, dans quel ordre</li>
-                        <li>Matin et soir — sans se tromper d&apos;étape</li>
+                        <li>Matin et soir, sans se tromper d&apos;étape</li>
                         <li>Des produits adaptés à ta peau et ton budget</li>
                         <li>Les erreurs à éviter pour améliorer tes résultats</li>
                       </ul>
                     </div>
-                    <label className="email-field unlock-email">
-                      <span>Email pour recevoir ta routine</span>
-                      <input
-                        type="email"
-                        value={email}
-                        onChange={(e) => setEmail(e.target.value)}
-                        placeholder="vous@email.com"
-                      />
-                    </label>
                     <button className="stripe-button" type="button" onClick={startCheckout} disabled={checkoutLoading}>
                       {checkoutLoading ? "Ouverture de Stripe..." : "Débloquer ma routine personnalisée · 9,99 €"}
                     </button>

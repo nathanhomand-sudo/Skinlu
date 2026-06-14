@@ -2501,9 +2501,9 @@ h1 span { color: var(--accent); }
 }
 .preview-summary {
   color: var(--text-primary);
-  font-size: 0.92rem;
-  font-weight: 700;
-  line-height: 1.45;
+  font-size: 1rem;
+  font-weight: 600;
+  line-height: 1.55;
 }
 .result-panel .concern-list span {
   font-size: 0.74rem;
@@ -2521,9 +2521,6 @@ h1 span { color: var(--accent); }
 }
 .result-panel .paywall-deliverables {
   grid-template-columns: repeat(2, minmax(0, 1fr));
-}
-.result-panel .unlock-email {
-  margin-top: 0.15rem;
 }
 .analysis-overlay {
   background:
@@ -2809,14 +2806,30 @@ h1 span { color: var(--accent); }
   color: var(--accent);
 }
 
-/* Preview summary: subtle left bar for character */
+/* Preview summary: hero element, first in result panel */
 .preview-summary {
-  border-left: 3px solid rgba(15, 107, 95, 0.32);
-  padding-left: 0.65rem;
+  border-left: 3px solid var(--accent);
+  padding: 0.75rem 0.9rem;
+  background: rgba(15, 107, 95, 0.05);
+  border-radius: 0 10px 10px 0;
   font-style: italic;
-  color: var(--text-secondary) !important;
+  color: var(--text-primary) !important;
   font-weight: 600 !important;
-  font-size: 0.88rem !important;
+  font-size: 1rem !important;
+  line-height: 1.55 !important;
+  margin-bottom: 1rem;
+}
+
+/* Soft alert after concern badges */
+.routine-alert {
+  font-size: 0.82rem;
+  color: var(--accent);
+  background: rgba(15, 107, 95, 0.07);
+  border: 1px solid rgba(15, 107, 95, 0.18);
+  border-radius: 8px;
+  padding: 0.6rem 0.85rem;
+  margin: 0.5rem 0 0.75rem;
+  line-height: 1.45;
 }
 
 /* ── Paywall: more premium + visual anchor ────────────────────── */
