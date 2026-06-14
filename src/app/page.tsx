@@ -889,24 +889,27 @@ export default function Home() {
                     </div>
                     <div className="routine-blur-teaser" aria-hidden="true">
                       <div className="rbt-rows">
-                        <div className="rbt-row"><span className="rbt-num">1</span><span className="rbt-text">Nettoyant · matin</span></div>
-                        <div className="rbt-row"><span className="rbt-num">2</span><span className="rbt-text">Sérum ciblé · matin</span></div>
-                        <div className="rbt-row"><span className="rbt-num">3</span><span className="rbt-text">Crème hydratante</span></div>
-                        <div className="rbt-row"><span className="rbt-num">4</span><span className="rbt-text">SPF 50</span></div>
+                        <div className="rbt-section-label">Matin</div>
+                        <div className="rbt-row"><span className="rbt-num">1</span><span className="rbt-text">Nettoyant doux</span></div>
+                        <div className="rbt-row"><span className="rbt-num">2</span><span className="rbt-text">Sérum ciblé</span></div>
+                        <div className="rbt-row"><span className="rbt-num">3</span><span className="rbt-text">Hydratant · SPF 50</span></div>
+                        <div className="rbt-section-label">Soir</div>
+                        <div className="rbt-row"><span className="rbt-num">1</span><span className="rbt-text">Double nettoyage</span></div>
+                        <div className="rbt-row"><span className="rbt-num">2</span><span className="rbt-text">Traitement nuit</span></div>
                       </div>
                       <div className="rbt-overlay">
-                        <span>Routine verrouillée</span>
-                        <span>Débloque pour voir tes produits →</span>
+                        <span className="rbt-lock-badge">Plan généré · Verrouillé</span>
+                        <span className="rbt-lock-cta">Ton plan est prêt →</span>
                       </div>
                     </div>
                     <div className="paywall-block">
                       <h3 className="paywall-title">Ta routine sur-mesure est prête.</h3>
-                      <p className="paywall-subtitle">Une routine claire pour arrêter de mélanger des produits au hasard.</p>
+                      <p className="paywall-subtitle">On a transformé ton analyse en un plan simple à suivre.</p>
                       <ul className="paywall-deliverables">
-                        <li>Routine matin + soir, étape par étape</li>
-                        <li>6 à 8 produits choisis pour toi (toutes gammes de prix)</li>
-                        <li>Erreurs à éviter pour ton cas</li>
-                        <li>Le pourquoi de chaque étape, expliqué simplement</li>
+                        <li>Quoi appliquer, dans quel ordre</li>
+                        <li>Matin et soir — sans se tromper d&apos;étape</li>
+                        <li>Des produits adaptés à ta peau et ton budget</li>
+                        <li>Les erreurs à éviter pour améliorer tes résultats</li>
                       </ul>
                     </div>
                     <label className="email-field unlock-email">
@@ -919,10 +922,10 @@ export default function Home() {
                       />
                     </label>
                     <button className="stripe-button" type="button" onClick={startCheckout} disabled={checkoutLoading}>
-                      {checkoutLoading ? "Ouverture de Stripe..." : "Voir ma routine complète · 9,99 €"}
+                      {checkoutLoading ? "Ouverture de Stripe..." : "Débloquer ma routine personnalisée · 9,99 €"}
                     </button>
                     <p className="paywall-anchor">
-                      Moins cher qu&apos;un produit acheté au hasard qui ne te sert pas.
+                      Moins cher qu&apos;un produit acheté au hasard qui ne te sert à rien.
                     </p>
                     {reportLoading ? (
                       <div className="diagnostic-spinner" role="status" aria-live="polite">
@@ -1018,7 +1021,7 @@ export default function Home() {
       {diagnostic && !routine && (
         <div className="mobile-paywall-sticky" aria-hidden="true">
           <button className="stripe-button" type="button" onClick={startCheckout} disabled={checkoutLoading}>
-            {checkoutLoading ? "Ouverture de Stripe..." : "Voir ma routine complète · 9,99 €"}
+            {checkoutLoading ? "Ouverture de Stripe..." : "Débloquer ma routine personnalisée · 9,99 €"}
           </button>
         </div>
       )}
