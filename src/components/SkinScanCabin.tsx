@@ -447,9 +447,9 @@ export default function SkinScanCabin({
               type="button"
               className="scan-cabin-capture"
               onClick={capture}
-              disabled={disabled || isCapturing}
+              disabled={disabled || isCapturing || !scanState.ready}
             >
-              {isCapturing ? "Capture en cours..." : scanState.ready ? "Capturer le scan" : "Capturer quand même"}
+              {isCapturing ? "Capture en cours..." : scanState.ready ? "Capturer le scan" : "Ajuste le cadrage"}
             </button>
             <button type="button" className="scan-cabin-back" onClick={closeCabine}>
               Utiliser l&apos;upload

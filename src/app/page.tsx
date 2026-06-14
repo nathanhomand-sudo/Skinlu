@@ -60,6 +60,13 @@ const PROFILE_QUESTIONS = [
 type SkinProfileKey = (typeof PROFILE_QUESTIONS)[number]["key"];
 type SkinProfileAnswers = Partial<Record<SkinProfileKey, string>>;
 
+const LOADING_STEPS = [
+  "Lecture des signes visibles",
+  "Vérification du type probable",
+  "Construction de l'aperçu",
+  "Préparation de ta routine",
+];
+
 type DiagnosticPreview = {
   session_token: string;
   skin_type: SkinType;
@@ -114,6 +121,72 @@ function skinTypeLabel(skinType: SkinType) {
 function priorityLabel(concern: Concern) {
   if (concern === "dehydration") return "Signes visibles de déshydratation possible";
   return `Signe visible : ${concernLabel(concern).toLowerCase()}`;
+}
+
+function routineFocusLabel(concern: Concern) {
+  const labels: Record<Concern, string> = {
+    acne: "Calmer les imperfections sans agresser",
+    dehydration: "Renforcer l'hydratation sans empiler",
+    dark_spots: "Éclaircir progressivement les marques",
+    aging: "Protéger et lisser avec constance",
+    sensitivity: "Réduire les irritants potentiels",
+    dullness: "Relancer l'éclat sans surcharger",
+    enlarged_pores: "Alléger la routine et lisser la texture",
+  };
+  return labels[concern];
+}
+
+function shortSummary(summary: string) {
+  const firstSentence = summary.split(/(?<=[.!?])\s+/)[0]?.trim();
+  const text = firstSentence || summary;
+  return text.length > 150 ? `${text.slice(0, 147).trim()}...` : text;
+}
+
+async function getImageQualityWarning(file: File) {
+  const url = URL.createObjectURL(file);
+  try {
+    const image = await new Promise<HTMLImageElement>((resolve, reject) => {
+      const img = new Image();
+      img.onload = () => resolve(img);
+      img.onerror = reject;
+      img.src = url;
+    });
+
+    const sampleSize = 72;
+    const canvas = document.createElement("canvas");
+    canvas.width = sampleSize;
+    canvas.height = sampleSize;
+    const context = canvas.getContext("2d");
+    if (!context) return null;
+
+    context.drawImage(image, 0, 0, sampleSize, sampleSize);
+    const { data } = context.getImageData(0, 0, sampleSize, sampleSize);
+    let brightness = 0;
+    let min = 255;
+    let max = 0;
+
+    for (let i = 0; i < data.length; i += 4) {
+      const luminance = 0.299 * data[i] + 0.587 * data[i + 1] + 0.114 * data[i + 2];
+      brightness += luminance;
+      min = Math.min(min, luminance);
+      max = Math.max(max, luminance);
+    }
+
+    const average = brightness / (data.length / 4);
+    const contrast = max - min;
+
+    if (average < 42) {
+      return "Photo trop sombre. Reprends-la face à une fenêtre pour obtenir une analyse plus utile.";
+    }
+    if (contrast < 18) {
+      return "Photo peu lisible. Utilise une image plus nette, visage dégagé et lumière uniforme.";
+    }
+    return null;
+  } catch {
+    return null;
+  } finally {
+    URL.revokeObjectURL(url);
+  }
 }
 
 function ProductList({ products }: { products: Product[] }) {
@@ -240,6 +313,7 @@ export default function Home() {
   const [error, setError] = useState<string | null>(null);
   const [skinProfile, setSkinProfile] = useState<SkinProfileAnswers>({});
   const [loading, setLoading] = useState(false);
+  const [loadingStep, setLoadingStep] = useState(0);
   const [checkoutLoading, setCheckoutLoading] = useState(false);
   const [reportLoading, setReportLoading] = useState(false);
   const [diagnostic, setDiagnostic] = useState<DiagnosticPreview | null>(
@@ -283,6 +357,13 @@ export default function Home() {
   useEffect(() => {
     if (loading) {
       document.body.style.overflow = 'hidden';
+      const intervalId = window.setInterval(() => {
+        setLoadingStep((step) => Math.min(step + 1, LOADING_STEPS.length - 1));
+      }, 2400);
+      return () => {
+        window.clearInterval(intervalId);
+        document.body.style.overflow = '';
+      };
     } else {
       document.body.style.overflow = '';
     }
@@ -325,6 +406,7 @@ export default function Home() {
       body.append("skin_profile", JSON.stringify(skinProfile));
     }
 
+    setLoadingStep(0);
     setLoading(true); setError(null); setDiagnostic(null); clearPaidState();
     track("analysis_started");
 
@@ -426,12 +508,40 @@ export default function Home() {
         <div className="analysis-overlay" role="status" aria-live="polite" aria-label="Analyse en cours">
           <div className="analysis-overlay-inner">
             <span className="ao-logo">Skinlu</span>
-            <div className="ao-spinner-ring" />
-            <p className="ao-label">Analyse cosmétique en cours...</p>
-            <div className="ao-progress-wrap">
-              <div className="ao-progress-fill" />
+            <div className="ao-scan-card" aria-hidden="true">
+              <div className="ao-face-oval" />
+              <div className="ao-scan-line" />
+              <div className="ao-halo" />
+              <div className="ao-corner ao-corner--tl" />
+              <div className="ao-corner ao-corner--tr" />
+              <div className="ao-corner ao-corner--bl" />
+              <div className="ao-corner ao-corner--br" />
+              <div className="ao-scan-glow" />
             </div>
-            <p className="ao-sub">30 secondes · Signes visibles, routine plus claire</p>
+            <p className="ao-label">{LOADING_STEPS[loadingStep]}</p>
+            <div className="ao-progress-wrap">
+              <div
+                className="ao-progress-fill"
+                style={{ width: `${18 + loadingStep * 27}%` }}
+              />
+            </div>
+            <div className="ao-step-list">
+              {LOADING_STEPS.map((step, index) => (
+                <span
+                  className={
+                    index < loadingStep
+                      ? "is-done"
+                      : index === loadingStep
+                        ? "is-active"
+                        : ""
+                  }
+                  key={step}
+                >
+                  {step}
+                </span>
+              ))}
+            </div>
+            <p className="ao-sub">On combine signes visibles et contexte rapide.</p>
           </div>
         </div>
       )}
@@ -680,12 +790,19 @@ export default function Home() {
                 </div>
                 <form onSubmit={handleSubmit} className="upload-form">
                   <SkinScanCabin
-                    onSelfieSelected={(file) => {
+                    onSelfieSelected={async (file) => {
                       setError(null);
                       setDiagnostic(null);
                       clearPaidState();
                       window.localStorage.removeItem(DIAGNOSTIC_STORAGE_KEY);
                       if (!file) { setSelfie(null); setPreviewUrl(null); return; }
+                      const qualityWarning = await getImageQualityWarning(file);
+                      if (qualityWarning) {
+                        setSelfie(null);
+                        setPreviewUrl(null);
+                        setError(qualityWarning);
+                        return;
+                      }
                       setSelfie(file);
                       // FileReader (data URL) — more reliable than createObjectURL on iOS Safari
                       const reader = new FileReader();
@@ -741,19 +858,33 @@ export default function Home() {
 
                 {diagnostic ? (
                   <div className="result-panel" role="status" aria-live="polite">
-                    <span className="status-label">Aperçu gratuit</span>
-                    <div className="diagnostic-summary">
-                      <span className="result-kicker">Priorité cosmétique indicative</span>
-                      <h2>{priorityLabel(diagnostic.top_priority)}</h2>
-                      <p>{diagnostic.summary}</p>
+                    <div className="free-preview-header">
+                      <span className="status-label">Ce que Skinlu remarque</span>
+                      <strong>Analyse indicative</strong>
                     </div>
-                    <div className="skin-type-card">
-                      <span>Type probable</span>
-                      <strong>Ta peau semble {skinTypeLabel(diagnostic.skin_type)}</strong>
+                    <div className="preview-cards">
+                      <article className="preview-card">
+                        <span>Type probable</span>
+                        <strong>Peau {skinTypeLabel(diagnostic.skin_type)}</strong>
+                        <small>Indicatif, basé sur les signes visibles</small>
+                      </article>
+                      <article className="preview-card" data-concern={diagnostic.top_priority}>
+                        <span>Priorité principale</span>
+                        <strong>{concernLabel(diagnostic.top_priority)}</strong>
+                        <small>{priorityLabel(diagnostic.top_priority)}</small>
+                      </article>
+                      <article className="preview-card preview-card--accent">
+                        <span>Direction routine</span>
+                        <strong>{routineFocusLabel(diagnostic.top_priority)}</strong>
+                        <small>Ordre AM/PM débloqué ci-dessous</small>
+                      </article>
                     </div>
+                    <p className="preview-summary">{shortSummary(diagnostic.summary)}</p>
                     <div className="concern-list">
                       {diagnostic.concerns.map((concern) => (
-                        <span key={concern}>{priorityLabel(concern)}</span>
+                        <span key={concern} className={`concern-badge concern-badge--${concern}`}>
+                          {concernLabel(concern)}
+                        </span>
                       ))}
                     </div>
                     <div className="routine-blur-teaser" aria-hidden="true">
@@ -882,6 +1013,15 @@ export default function Home() {
           </div>
         </div>
       </section>
+
+      {/* ── MOBILE STICKY PAYWALL CTA (shown after result, mobile only) ── */}
+      {diagnostic && !routine && (
+        <div className="mobile-paywall-sticky" aria-hidden="true">
+          <button className="stripe-button" type="button" onClick={startCheckout} disabled={checkoutLoading}>
+            {checkoutLoading ? "Ouverture de Stripe..." : "Voir ma routine complète · 9,99 €"}
+          </button>
+        </div>
+      )}
 
       {/* ── FOOTER ───────────────────────────────────────────────── */}
       <footer className="site-footer">

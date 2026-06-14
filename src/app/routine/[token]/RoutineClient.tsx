@@ -73,11 +73,15 @@ const FORECAST_TIPS: Record<Concern, [string, string, string]> = {
   ],
 };
 
+const MORNING_STEP_LABELS = ["Nettoyer", "Traitement", "Hydrater", "SPF / Finition"];
+const EVENING_STEP_LABELS = ["Démaquiller", "Traitement nuit", "Nourrir", "Finir"];
+
 export default function RoutineClient({ token }: { token: string }) {
   const [routine, setRoutine] = useState<RoutineReport | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [sharing, setSharing] = useState(false);
+  const [copied, setCopied] = useState(false);
   const shareCardRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -136,6 +140,29 @@ export default function RoutineClient({ token }: { token: string }) {
       alert(
         "Fais une capture d'écran de la carte ci-dessus pour la partager sur TikTok !",
       );
+    }
+  }
+
+  async function handleCopy() {
+    if (!routine) return;
+    const lines = [
+      `Ma routine Skinlu · ${SKIN_TYPE_LABELS[routine.skin_type]}`,
+      `Priorité : ${CONCERN_LABELS[routine.top_priority]}`,
+      "",
+      "☀ MATIN",
+      ...routine.morning.map((p, i) => `${i + 1}. ${p.brand} — ${p.name}${p.price_eur != null ? ` (${p.price_eur.toFixed(2)} €)` : ""}`),
+      "",
+      "☽ SOIR",
+      ...routine.evening.map((p, i) => `${i + 1}. ${p.brand} — ${p.name}${p.price_eur != null ? ` (${p.price_eur.toFixed(2)} €)` : ""}`),
+      "",
+      "skinlu.app",
+    ].join("\n");
+    try {
+      await navigator.clipboard.writeText(lines);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    } catch {
+      // clipboard non disponible
     }
   }
 
@@ -219,8 +246,15 @@ export default function RoutineClient({ token }: { token: string }) {
           >
             {sharing ? "Préparation…" : "Partager mon diagnostic"}
           </button>
+          <button
+            className="copy-btn"
+            onClick={() => void handleCopy()}
+            disabled={copied}
+          >
+            {copied ? "Routine copiée ✓" : "Copier ma routine"}
+          </button>
           <p className="share-note">
-            Capture la carte · Sans données personnelles
+            Screenshot la carte · Copie ta liste · Rien de personnel
           </p>
         </div>
       </div>
@@ -231,10 +265,12 @@ export default function RoutineClient({ token }: { token: string }) {
           <RoutineCol
             label="☀ Matin"
             products={routine.morning}
+            isMorning={true}
           />
           <RoutineCol
             label="☽ Soir"
             products={routine.evening}
+            isMorning={false}
           />
         </div>
       </section>
@@ -274,10 +310,13 @@ function Nav() {
 function RoutineCol({
   label,
   products,
+  isMorning,
 }: {
   label: string;
   products: Product[];
+  isMorning: boolean;
 }) {
+  const stepLabels = isMorning ? MORNING_STEP_LABELS : EVENING_STEP_LABELS;
   return (
     <div className="routine-col">
       <div className="routine-col-heading">
@@ -292,14 +331,14 @@ function RoutineCol({
         </p>
       ) : (
         products.map((p, i) => (
-          <ProductCard key={p.id} product={p} step={i + 1} />
+          <ProductCard key={p.id} product={p} step={i + 1} stepLabel={stepLabels[i]} />
         ))
       )}
     </div>
   );
 }
 
-function ProductCard({ product, step }: { product: Product; step: number }) {
+function ProductCard({ product, step, stepLabel }: { product: Product; step: number; stepLabel?: string }) {
   return (
     <article className="rp-card">
       <div className="rp-card-img-wrap">
@@ -316,6 +355,7 @@ function ProductCard({ product, step }: { product: Product; step: number }) {
         <span className="rp-card-step">{step}</span>
       </div>
       <div className="rp-card-body">
+        {stepLabel && <span className="rp-card-step-label">{stepLabel}</span>}
         <span className="rp-card-brand">{product.brand}</span>
         <strong className="rp-card-name">{product.name}</strong>
         {product.price_eur != null && (
@@ -330,7 +370,7 @@ function ProductCard({ product, step }: { product: Product; step: number }) {
         target="_blank"
         rel="noreferrer"
       >
-        Voir le produit
+        Voir le produit →
       </a>
     </article>
   );
