@@ -65,10 +65,10 @@ type SkinProfileKey = (typeof PROFILE_QUESTIONS)[number]["key"];
 type SkinProfileAnswers = Partial<Record<SkinProfileKey, string>>;
 
 const LOADING_STEPS = [
-  "Lecture des signes visibles",
-  "Vérification du type probable",
-  "Construction de l'aperçu",
-  "Préparation de ta routine",
+  "Visage détecté",
+  "Analyse des zones visibles",
+  "Lecture des signaux cutanés",
+  "Création de ton profil peau",
 ];
 
 type DiagnosticPreview = {
@@ -394,6 +394,10 @@ export default function Home() {
 
   function handleHeroCta() {
     track("hero_cta_click");
+    if (diagnostic) {
+      document.getElementById("diagnostic")?.scrollIntoView({ behavior: "smooth" });
+      return;
+    }
     setScanModalOpen(true);
   }
 
@@ -570,15 +574,22 @@ export default function Home() {
 
       {/* ── SCAN MODAL ───────────────────────────────────────────── */}
       {scanModalOpen && (
-        <div className="scan-modal" role="dialog" aria-modal="true" aria-label="Scanner ma peau">
-          <button
-            className="scan-modal-close"
-            type="button"
-            onClick={() => setScanModalOpen(false)}
-            aria-label="Fermer"
-          >
-            ✕
-          </button>
+        <div className="scan-modal" role="dialog" aria-modal="true" aria-label="Skinlu AI Scan">
+          <div className="scan-modal-header">
+            <div className="scan-modal-identity">
+              <span className="scan-modal-logo">Skinlu</span>
+              <span className="scan-modal-badge">AI Scan</span>
+            </div>
+            <button
+              className="scan-modal-close"
+              type="button"
+              onClick={() => setScanModalOpen(false)}
+              aria-label="Fermer"
+            >
+              ✕
+            </button>
+          </div>
+          <p className="scan-modal-tagline">Positionne ton visage. L&apos;analyse IA Skinlu fait le reste.</p>
           <div className="scan-modal-inner">
             <SkinScanCabin
               ref={scanCabinRef}
@@ -635,7 +646,7 @@ export default function Home() {
                 </span>
               ))}
             </div>
-            <p className="ao-sub">On combine signes visibles et contexte rapide.</p>
+            <p className="ao-sub">Analyse IA Skinlu · Cosmétique indicative</p>
           </div>
         </div>
       )}
@@ -661,7 +672,7 @@ export default function Home() {
               Avant d&apos;acheter encore un produit viral, vérifie si ta peau en a vraiment besoin.
             </p>
             <button type="button" className="hero-cta" onClick={handleHeroCta}>
-              Scanner ma peau gratuitement
+              {diagnostic ? "Voir mon analyse" : "Scanner ma peau gratuitement"}
             </button>
           </div>
 
@@ -784,7 +795,7 @@ export default function Home() {
               <li>Aperçu de routine, sans compte.</li>
             </ul>
             <button type="button" className="hero-cta" onClick={handleHeroCta}>
-              Scanner ma peau gratuitement
+              {diagnostic ? "Voir mon analyse" : "Scanner ma peau gratuitement"}
             </button>
           </div>
           <div className="split-phone reveal reveal-delay-1">
@@ -1072,7 +1083,7 @@ export default function Home() {
           <div className="final-cta-inner reveal">
             <span className="eyebrow">Avant ton prochain achat</span>
             <h2>Fais ton scan gratuit.</h2>
-            <button type="button" className="hero-cta" onClick={handleHeroCta}>Scanner ma peau gratuitement</button>
+            <button type="button" className="hero-cta" onClick={handleHeroCta}>{diagnostic ? "Voir mon analyse" : "Scanner ma peau gratuitement"}</button>
           </div>
         </div>
       </section>

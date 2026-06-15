@@ -2986,42 +2986,199 @@ h1 span { color: var(--accent); }
   .stripe-button::before { animation: none !important; }
 }
 
-/* ── Scan modal full-screen ──────────────────────────────────── */
+/* ── Scan modal — Capsule IA Skinlu ─────────────────────────── */
 .scan-modal {
   position: fixed;
   inset: 0;
   z-index: 950;
-  background: #0d1210;
+  background: #09100e;
+  background-image:
+    radial-gradient(ellipse 70% 55% at 50% 44%, rgba(15, 107, 95, 0.13) 0%, transparent 68%),
+    linear-gradient(rgba(255,255,255,0.022) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(255,255,255,0.022) 1px, transparent 1px);
+  background-size: 100% 100%, 52px 52px, 52px 52px;
   display: flex;
   flex-direction: column;
   align-items: center;
-  justify-content: center;
+  overflow: hidden;
+}
+
+/* Header */
+.scan-modal-header {
+  width: 100%;
+  max-width: 480px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 1.25rem 1.5rem 0;
+  flex-shrink: 0;
+}
+.scan-modal-identity {
+  display: flex;
+  align-items: center;
+  gap: 0.55rem;
+}
+.scan-modal-logo {
+  color: #fff;
+  font-size: 1.05rem;
+  font-weight: 800;
+  letter-spacing: -0.02em;
+}
+.scan-modal-badge {
+  display: flex;
+  align-items: center;
+  gap: 0.3rem;
+  background: rgba(15, 107, 95, 0.18);
+  border: 1px solid rgba(15, 107, 95, 0.42);
+  color: #7dd4ca;
+  font-size: 0.62rem;
+  font-weight: 700;
+  padding: 0.18rem 0.5rem;
+  border-radius: 4px;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
+.scan-modal-badge::before {
+  content: "";
+  width: 5px;
+  height: 5px;
+  background: #7dd4ca;
+  border-radius: 50%;
+  animation: smb-pulse 1.8s ease-in-out infinite;
+  flex-shrink: 0;
+}
+@keyframes smb-pulse {
+  0%, 100% { opacity: 1; transform: scale(1); }
+  50% { opacity: 0.35; transform: scale(0.65); }
 }
 .scan-modal-close {
-  position: absolute;
-  top: 1.25rem;
-  right: 1.25rem;
-  background: rgba(255, 255, 255, 0.12);
-  border: none;
-  color: #fff;
-  width: 2.5rem;
-  height: 2.5rem;
+  background: rgba(255, 255, 255, 0.07);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  color: rgba(255, 255, 255, 0.6);
+  width: 2.2rem;
+  height: 2.2rem;
   border-radius: 50%;
-  font-size: 1.1rem;
+  font-size: 0.9rem;
   cursor: pointer;
   display: flex;
   align-items: center;
   justify-content: center;
-  z-index: 10;
-  transition: background 0.15s;
+  transition: background 0.15s, color 0.15s;
 }
-.scan-modal-close:hover { background: rgba(255, 255, 255, 0.22); }
+.scan-modal-close:hover { background: rgba(255, 255, 255, 0.14); color: #fff; }
+
+.scan-modal-tagline {
+  color: rgba(255, 255, 255, 0.42);
+  font-size: 0.78rem;
+  text-align: center;
+  padding: 0.55rem 2rem 0;
+  max-width: 340px;
+  line-height: 1.5;
+}
+
 .scan-modal-inner {
   width: 100%;
   max-width: 480px;
-  padding: 0 1rem;
+  padding: 0.5rem 1rem 0;
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
 }
-.scan-modal-inner .selfie-picker { background: transparent; }
+
+/* ── Cabin dark-mode overrides (inside scan modal) ─────────────── */
+.scan-modal .selfie-picker { background: transparent; }
+.scan-modal .scan-cabin-idle {
+  background: transparent;
+  text-align: center;
+  padding: 2rem 1rem;
+  gap: 0.85rem;
+}
+.scan-modal .scan-cabin-cta {
+  background: rgba(15, 107, 95, 0.82);
+  border: 1px solid rgba(15, 107, 95, 0.9);
+  color: #fff;
+  box-shadow: 0 0 28px rgba(15, 107, 95, 0.28);
+}
+.scan-modal .scan-cabin-cta:hover:not(:disabled) {
+  background: var(--accent);
+  box-shadow: 0 0 36px rgba(15, 107, 95, 0.4);
+}
+.scan-modal .scan-cabin-upload-link {
+  color: rgba(255, 255, 255, 0.35);
+}
+.scan-modal .scan-cabin-upload-link:hover { color: rgba(255, 255, 255, 0.6); }
+.scan-modal .scan-cabin-error {
+  color: #f87171;
+}
+
+/* Viewport */
+.scan-modal .scan-cabin-viewport {
+  border-color: rgba(15, 107, 95, 0.3);
+  box-shadow: 0 0 0 1px rgba(15, 107, 95, 0.12), inset 0 0 50px rgba(0,0,0,0.25);
+  transition: border-color 0.5s ease, box-shadow 0.5s ease;
+}
+.scan-modal .scan-cabin-viewport.is-ready {
+  border-color: rgba(15, 107, 95, 0.75);
+  box-shadow:
+    0 0 0 1px rgba(15, 107, 95, 0.35),
+    0 0 40px rgba(15, 107, 95, 0.22),
+    inset 0 0 20px rgba(15, 107, 95, 0.06);
+}
+
+/* Corners frame */
+.scan-modal .scan-cabin-frame {
+  border-color: rgba(15, 107, 95, 0.25);
+}
+.scan-modal .scan-cabin-viewport.is-ready .scan-cabin-frame {
+  border-color: rgba(15, 107, 95, 0.55);
+}
+
+/* Status */
+.scan-modal .scan-cabin-status {
+  background: rgba(9, 16, 14, 0.8);
+  border: 1px solid rgba(255, 255, 255, 0.07);
+  backdrop-filter: blur(10px);
+}
+.scan-modal .scan-cabin-status strong {
+  color: rgba(255, 255, 255, 0.92);
+}
+.scan-modal .scan-cabin-status span {
+  color: rgba(255, 255, 255, 0.48);
+}
+.scan-modal .scan-cabin-status.is-ready {
+  border-color: rgba(15, 107, 95, 0.4);
+  background: rgba(15, 107, 95, 0.1);
+}
+.scan-modal .scan-cabin-status.is-ready strong { color: #7dd4ca; }
+
+/* Light dot */
+.scan-modal .scan-cabin-light {
+  background: rgba(9, 16, 14, 0.7);
+  border-color: rgba(255,255,255,0.08);
+  color: rgba(255,255,255,0.5);
+}
+.scan-modal .scan-cabin-light.light-ok { color: #7dd4ca; border-color: rgba(15, 107, 95, 0.45); }
+.scan-modal .scan-cabin-light.light-low { color: #fbbf24; border-color: rgba(251,188,5,0.4); }
+
+/* Action buttons */
+.scan-modal .scan-cabin-capture {
+  background: var(--accent); color: #fff; border-color: var(--accent);
+}
+.scan-modal .scan-cabin-back {
+  color: rgba(255,255,255,0.45);
+  border-color: rgba(255,255,255,0.1);
+}
+.scan-modal .scan-cabin-back:hover {
+  color: rgba(255,255,255,0.75);
+  border-color: rgba(255,255,255,0.22);
+}
+
+/* Progress bar */
+.scan-modal .scan-cabin-auto-bar {
+  background: linear-gradient(90deg, rgba(15,107,95,0.5), #0F6B5F);
+  height: 2px;
+}
 
 /* ── Selfie retake ───────────────────────────────────────────── */
 .selfie-retake {

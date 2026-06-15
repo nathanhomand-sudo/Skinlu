@@ -423,7 +423,7 @@ function SkinScanCabin({
     return (
       <div className="selfie-picker">
         <div className="scan-cabin-wrap">
-          <div className={`scan-cabin-viewport${isCapturing ? " is-capturing" : ""}`}>
+          <div className={`scan-cabin-viewport${isCapturing ? " is-capturing" : ""}${scanState.ready && !isCapturing ? " is-ready" : ""}`}>
             <video
               ref={videoRef}
               playsInline
