@@ -14,7 +14,7 @@ export default function AuthGate() {
     const supabase = getSupabaseBrowser();
     await supabase.auth.signInWithOAuth({
       provider: "google",
-      options: { redirectTo: window.location.href },
+      options: { redirectTo: `${window.location.origin}/` },
     });
   }
 
@@ -26,7 +26,7 @@ export default function AuthGate() {
     const supabase = getSupabaseBrowser();
     const { error: otpError } = await supabase.auth.signInWithOtp({
       email: email.trim(),
-      options: { emailRedirectTo: window.location.href },
+      options: { emailRedirectTo: `${window.location.origin}/` },
     });
     setLoading(false);
     if (otpError) {
