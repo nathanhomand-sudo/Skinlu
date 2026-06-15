@@ -461,6 +461,9 @@ export default function Home() {
       setDiagnostic(data as DiagnosticPreview);
       window.localStorage.setItem(DIAGNOSTIC_STORAGE_KEY, JSON.stringify(data));
       track("analysis_success", { skin_type: data.skin_type, top_priority: data.top_priority });
+      window.setTimeout(() => {
+        document.getElementById("diagnostic")?.scrollIntoView({ behavior: "smooth", block: "start" });
+      }, 150);
       analysisTracked = true;
     } catch (caughtError) {
       if (!analysisTracked) {
