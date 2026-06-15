@@ -16,7 +16,7 @@ import type { Concern } from "@/lib/skin-diagnostic";
 import type { SkinType } from "@/lib/visual-age";
 import { getSupabaseBrowser } from "@/lib/supabase-client";
 import AuthGate from "@/components/AuthGate";
-import SkinScanCabin from "@/components/SkinScanCabin";
+import SkinScanCabin, { type SkinScanCabinHandle } from "@/components/SkinScanCabin";
 import { track } from "@/lib/track";
 
 const ACCEPTED_TYPES = ["image/jpeg", "image/png", "image/webp"];
@@ -307,6 +307,7 @@ function UrgencyCounter() {
 
 export default function Home() {
   const scanEntryTracked = useRef(false);
+  const scanCabinRef = useRef<SkinScanCabinHandle>(null);
   const [selfie, setSelfie] = useState<File | null>(null);
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -389,6 +390,12 @@ export default function Home() {
   }, []);
 
   function clearPaidState() { setRoutine(null); }
+
+  function handleHeroCta() {
+    track("hero_cta_click");
+    document.getElementById("diagnostic")?.scrollIntoView({ behavior: "smooth" });
+    scanCabinRef.current?.openCamera();
+  }
 
   function updateSkinProfile(key: SkinProfileKey, value: string) {
     setSkinProfile((current) => ({ ...current, [key]: value }));
@@ -596,9 +603,9 @@ export default function Home() {
             <p className="hero-microcopy">
               Avant d&apos;acheter encore un produit viral, vérifie si ta peau en a vraiment besoin.
             </p>
-            <a href="#diagnostic" className="hero-cta" onClick={() => track("hero_cta_click")}>
-              Faire mon scan gratuit
-            </a>
+            <button type="button" className="hero-cta" onClick={handleHeroCta}>
+              Scanner ma peau gratuitement
+            </button>
           </div>
 
           {/* Visual — portrait + floating cards UI */}
@@ -719,9 +726,9 @@ export default function Home() {
               <li>Préoccupations visibles.</li>
               <li>Aperçu de routine, sans compte.</li>
             </ul>
-            <a href="#diagnostic" className="hero-cta" onClick={() => track("hero_cta_click")}>
-              Faire mon scan gratuit
-            </a>
+            <button type="button" className="hero-cta" onClick={handleHeroCta}>
+              Scanner ma peau gratuitement
+            </button>
           </div>
           <div className="split-phone reveal reveal-delay-1">
             <img src="/skinlu-hero-lifestyle.png" alt="" className="split-lifestyle-img" />
@@ -804,40 +811,8 @@ export default function Home() {
                   <span>Cabine de scan</span>
                 </div>
                 <form onSubmit={handleSubmit} className="upload-form">
-                  <div className="skin-profile-card" aria-label="Profil peau">
-                    <div className="skin-profile-heading">
-                      <span>Étape 1 · Ton profil</span>
-                      <strong>3 questions pour affiner ton résultat</strong>
-                    </div>
-                    <div className="skin-profile-grid">
-                      {PROFILE_QUESTIONS.map((item) => (
-                        <fieldset className="skin-profile-question" key={item.key}>
-                          <legend>{item.question}</legend>
-                          <div className="skin-profile-options">
-                            {item.options.map((option) => (
-                              <button
-                                type="button"
-                                className={
-                                  skinProfile[item.key] === option
-                                    ? "skin-profile-option is-selected"
-                                    : "skin-profile-option"
-                                }
-                                onClick={() => updateSkinProfile(item.key, option)}
-                                disabled={loading}
-                                key={option}
-                              >
-                                {option}
-                              </button>
-                            ))}
-                          </div>
-                        </fieldset>
-                      ))}
-                    </div>
-                  </div>
-                  <div className="scan-step-header">
-                    <span>Étape 2 · Selfie</span>
-                  </div>
                   <SkinScanCabin
+                    ref={scanCabinRef}
                     onSelfieSelected={async (file) => {
                       setError(null);
                       setDiagnostic(null);
@@ -898,6 +873,26 @@ export default function Home() {
                         <span key={concern} className={`concern-badge concern-badge--${concern}`}>
                           {concernLabel(concern)}
                         </span>
+                      ))}
+                    </div>
+                    <div className="post-scan-questions">
+                      <p className="psq-header">Affine ton résultat</p>
+                      {PROFILE_QUESTIONS.slice(0, 2).map((item) => (
+                        <div key={item.key} className="psq-row">
+                          <span className="psq-question">{item.question}</span>
+                          <div className="psq-options">
+                            {item.options.map((opt) => (
+                              <button
+                                key={opt}
+                                type="button"
+                                className={skinProfile[item.key] === opt ? "psq-opt is-selected" : "psq-opt"}
+                                onClick={() => updateSkinProfile(item.key, opt)}
+                              >
+                                {opt}
+                              </button>
+                            ))}
+                          </div>
+                        </div>
                       ))}
                     </div>
                     <p className="routine-alert">Évite d&apos;ajouter de nouveaux produits avant d&apos;avoir clarifié ta routine.</p>
@@ -1020,7 +1015,7 @@ export default function Home() {
           <div className="final-cta-inner reveal">
             <span className="eyebrow">Avant ton prochain achat</span>
             <h2>Fais ton scan gratuit.</h2>
-            <a href="#diagnostic" onClick={() => track("final_cta_click")}>Faire mon scan gratuit</a>
+            <button type="button" className="hero-cta" onClick={handleHeroCta}>Scanner ma peau gratuitement</button>
           </div>
         </div>
       </section>

@@ -2986,6 +2986,58 @@ h1 span { color: var(--accent); }
   .stripe-button::before { animation: none !important; }
 }
 
+/* ── Post-scan inline questions ──────────────────────────────── */
+.post-scan-questions {
+  margin: 1.25rem 0 0.5rem;
+  padding: 1rem 1.25rem;
+  background: var(--surface-hi);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 0.85rem;
+}
+.psq-header {
+  font-size: 0.78rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--accent);
+  margin: 0;
+}
+.psq-row {
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+}
+.psq-question {
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: var(--text-primary);
+}
+.psq-options {
+  display: flex;
+  gap: 0.4rem;
+  flex-wrap: wrap;
+}
+.psq-opt {
+  padding: 0.35rem 0.75rem;
+  border: 1.5px solid var(--border);
+  border-radius: 20px;
+  background: var(--surface);
+  font-size: 0.8rem;
+  font-weight: 500;
+  color: var(--text-secondary);
+  cursor: pointer;
+  transition: border-color 0.15s, background 0.15s, color 0.15s;
+}
+.psq-opt:hover { border-color: var(--accent); color: var(--accent); }
+.psq-opt.is-selected {
+  border-color: var(--accent);
+  background: var(--accent);
+  color: #fff;
+}
+
 /* ── AuthGate ────────────────────────────────────────────────── */
 .auth-gate {
   display: flex;

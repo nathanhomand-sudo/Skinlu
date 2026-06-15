@@ -2,7 +2,7 @@
 
 /* eslint-disable @next/next/no-img-element */
 
-import { ChangeEvent, useEffect, useMemo, useRef, useState } from "react";
+import { ChangeEvent, forwardRef, useEffect, useImperativeHandle, useMemo, useRef, useState } from "react";
 import type { FaceDetector as MediaPipeFaceDetector } from "@mediapipe/tasks-vision";
 import { track } from "@/lib/track";
 
@@ -22,6 +22,10 @@ function validateFile(file: File): string | null {
   return null;
 }
 
+export interface SkinScanCabinHandle {
+  openCamera: () => void;
+}
+
 interface SkinScanCabinProps {
   onSelfieSelected: (file: File | null) => void;
   onError: (message: string | null) => void;
@@ -29,12 +33,13 @@ interface SkinScanCabinProps {
   disabled: boolean;
 }
 
-export default function SkinScanCabin({
+const SkinScanCabin = forwardRef<SkinScanCabinHandle, SkinScanCabinProps>(
+function SkinScanCabin({
   onSelfieSelected,
   onError,
   previewUrl,
   disabled,
-}: SkinScanCabinProps) {
+}: SkinScanCabinProps, ref) {
   const [mode, setMode] = useState<"idle" | "cabine">("idle");
   const [lightOk, setLightOk] = useState<boolean | null>(null);
   const [cameraError, setCameraError] = useState<string | null>(null);
@@ -284,6 +289,8 @@ export default function SkinScanCabin({
     };
   }, [isReady, isCapturing, mode]);
 
+  useImperativeHandle(ref, () => ({ openCamera: openCabine }));
+
   async function openCabine() {
     if (streamRef.current || mode === "cabine") return;
     track("camera_permission_requested");
@@ -501,4 +508,6 @@ export default function SkinScanCabin({
       </div>
     </div>
   );
-}
+});
+
+export default SkinScanCabin;
