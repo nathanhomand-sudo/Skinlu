@@ -322,6 +322,7 @@ export default function Home() {
   const [routine, setRoutine] = useState<RoutineReport | null>(null);
   const [user, setUser] = useState<User | null>(null);
   const [skippedAuth, setSkippedAuth] = useState(false);
+  const [scanModalOpen, setScanModalOpen] = useState(false);
 
   useEffect(() => { track("landing_view"); }, []);
 
@@ -393,13 +394,37 @@ export default function Home() {
 
   function handleHeroCta() {
     track("hero_cta_click");
-    document.getElementById("diagnostic")?.scrollIntoView({ behavior: "smooth" });
-    scanCabinRef.current?.openCamera();
+    setScanModalOpen(true);
   }
 
   function updateSkinProfile(key: SkinProfileKey, value: string) {
     setSkinProfile((current) => ({ ...current, [key]: value }));
   }
+
+  async function handleSelfieSelected(file: File | null) {
+    if (!file) { setSelfie(null); setPreviewUrl(null); return; }
+    const qualityWarning = await getImageQualityWarning(file);
+    if (qualityWarning) {
+      setSelfie(null); setPreviewUrl(null);
+      setError(qualityWarning);
+      setScanModalOpen(false);
+      return;
+    }
+    setScanModalOpen(false);
+    setError(null); setDiagnostic(null); clearPaidState();
+    window.localStorage.removeItem(DIAGNOSTIC_STORAGE_KEY);
+    setSelfie(file);
+    const reader = new FileReader();
+    reader.onload = (e) => setPreviewUrl(e.target?.result as string ?? null);
+    reader.readAsDataURL(file);
+    void runAnalysis(file);
+  }
+
+  useEffect(() => {
+    if (!scanModalOpen) return;
+    const id = window.setTimeout(() => scanCabinRef.current?.openCamera(), 120);
+    return () => window.clearTimeout(id);
+  }, [scanModalOpen]);
 
   async function runAnalysis(file: File) {
     const validationError = validateFile(file);
@@ -540,9 +565,38 @@ export default function Home() {
   return (
     <main className={`site-shell ${diagnostic ? "has-result" : ""}`}>
 
+      {/* ── SCAN MODAL ───────────────────────────────────────────── */}
+      {scanModalOpen && (
+        <div className="scan-modal" role="dialog" aria-modal="true" aria-label="Scanner ma peau">
+          <button
+            className="scan-modal-close"
+            type="button"
+            onClick={() => setScanModalOpen(false)}
+            aria-label="Fermer"
+          >
+            ✕
+          </button>
+          <div className="scan-modal-inner">
+            <SkinScanCabin
+              ref={scanCabinRef}
+              onSelfieSelected={handleSelfieSelected}
+              onError={(msg) => { setError(msg); setScanModalOpen(false); }}
+              previewUrl={null}
+              disabled={loading}
+            />
+          </div>
+        </div>
+      )}
+
       {/* ── ANALYSIS OVERLAY (full-screen, locks scroll) ─────────── */}
       {loading && (
         <div className="analysis-overlay" role="status" aria-live="polite" aria-label="Analyse en cours">
+          {previewUrl && (
+            <>
+              <img src={previewUrl} alt="" className="ao-photo-bg" aria-hidden="true" />
+              <div className="ao-photo-tint" aria-hidden="true" />
+            </>
+          )}
           <div className="analysis-overlay-inner">
             <span className="ao-logo">Skinlu</span>
             <div className="ao-scan-card" aria-hidden="true">
@@ -811,31 +865,28 @@ export default function Home() {
                   <span>Cabine de scan</span>
                 </div>
                 <form onSubmit={handleSubmit} className="upload-form">
-                  <SkinScanCabin
-                    ref={scanCabinRef}
-                    onSelfieSelected={async (file) => {
-                      setError(null);
-                      setDiagnostic(null);
-                      clearPaidState();
-                      window.localStorage.removeItem(DIAGNOSTIC_STORAGE_KEY);
-                      if (!file) { setSelfie(null); setPreviewUrl(null); return; }
-                      const qualityWarning = await getImageQualityWarning(file);
-                      if (qualityWarning) {
-                        setSelfie(null);
-                        setPreviewUrl(null);
-                        setError(qualityWarning);
-                        return;
-                      }
-                      setSelfie(file);
-                      const reader = new FileReader();
-                      reader.onload = (e) => setPreviewUrl(e.target?.result as string ?? null);
-                      reader.readAsDataURL(file);
-                      void runAnalysis(file);
-                    }}
-                    onError={(msg) => setError(msg)}
-                    previewUrl={previewUrl}
-                    disabled={loading}
-                  />
+                  {previewUrl ? (
+                    <div className="selfie-retake">
+                      <img src={previewUrl} alt="Ton selfie" className="selfie-retake-img" />
+                      <button
+                        type="button"
+                        className="selfie-retake-btn"
+                        onClick={() => setScanModalOpen(true)}
+                        disabled={loading}
+                      >
+                        Refaire mon scan
+                      </button>
+                    </div>
+                  ) : (
+                    <button
+                      type="button"
+                      className="scan-cabin-cta"
+                      onClick={() => setScanModalOpen(true)}
+                      disabled={loading}
+                    >
+                      Scanner ma peau
+                    </button>
+                  )}
                   <p className="upload-reassurance">
                     Analyse cosmétique indicative. Ne remplace pas l&apos;avis d&apos;un professionnel de santé.
                   </p>
