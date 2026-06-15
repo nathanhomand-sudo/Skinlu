@@ -10,9 +10,12 @@ import {
   useRef,
   useState,
 } from "react";
+import type { User } from "@supabase/supabase-js";
 import type { Product } from "@/lib/matching";
 import type { Concern } from "@/lib/skin-diagnostic";
 import type { SkinType } from "@/lib/visual-age";
+import { getSupabaseBrowser } from "@/lib/supabase-client";
+import AuthGate from "@/components/AuthGate";
 import SkinScanCabin from "@/components/SkinScanCabin";
 import { track } from "@/lib/track";
 
@@ -316,6 +319,8 @@ export default function Home() {
     getStoredDiagnostic,
   );
   const [routine, setRoutine] = useState<RoutineReport | null>(null);
+  const [user, setUser] = useState<User | null>(null);
+  const [skippedAuth, setSkippedAuth] = useState(false);
 
   useEffect(() => { track("landing_view"); }, []);
 
@@ -453,7 +458,7 @@ export default function Home() {
       const response = await fetch("/api/stripe/checkout", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ sessionToken: diagnostic.session_token }),
+        body: JSON.stringify({ sessionToken: diagnostic.session_token, email: user?.email ?? undefined }),
       });
       const data = await response.json();
       if (!response.ok) throw new Error(data.error ?? "Stripe Checkout indisponible.");
@@ -496,6 +501,34 @@ export default function Home() {
       window.history.replaceState(null, "", window.location.pathname);
     }
   }, [unlockReport]);
+
+  useEffect(() => {
+    const supabase = getSupabaseBrowser();
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      if (session?.user) setUser(session.user);
+    });
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(
+      async (event, session) => {
+        if (event === "SIGNED_IN" && session?.user) {
+          setUser(session.user);
+          const stored = window.localStorage.getItem(DIAGNOSTIC_STORAGE_KEY);
+          if (stored) {
+            try {
+              const diag = JSON.parse(stored) as DiagnosticPreview;
+              await fetch("/api/auth/link", {
+                method: "POST",
+                headers: { "Content-Type": "application/json", Authorization: `Bearer ${session.access_token}` },
+                body: JSON.stringify({ sessionToken: diag.session_token }),
+              });
+            } catch { /* non-fatal */ }
+          }
+        } else if (event === "SIGNED_OUT") {
+          setUser(null);
+        }
+      }
+    );
+    return () => subscription.unsubscribe();
+  }, []);
 
   return (
     <main className={`site-shell ${diagnostic ? "has-result" : ""}`}>
@@ -883,6 +916,9 @@ export default function Home() {
                         <span className="rbt-lock-cta">Ton plan est prêt →</span>
                       </div>
                     </div>
+                    {!user && !skippedAuth && (
+                      <AuthGate onSkip={() => setSkippedAuth(true)} />
+                    )}
                     <div className="paywall-block">
                       <h3 className="paywall-title">Ta routine sur-mesure est prête.</h3>
                       <p className="paywall-subtitle">On a transformé ton analyse en un plan simple à suivre.</p>
