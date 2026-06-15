@@ -10,6 +10,7 @@ import {
   useRef,
   useState,
 } from "react";
+import NextImage from "next/image";
 import type { User } from "@supabase/supabase-js";
 import type { Product } from "@/lib/matching";
 import type { Concern } from "@/lib/skin-diagnostic";
@@ -283,7 +284,7 @@ function PhotoCarousel() {
             className="carousel-card"
             style={{ transform: `rotateY(${i * angleStep}deg) translateZ(${radius}px)` }}
           >
-            <img src={src} alt="" />
+            <NextImage src={src} alt="" width={280} height={420} sizes="280px" style={{ width: "100%", height: "100%", objectFit: "cover", borderRadius: "14px" }} />
           </div>
         ))}
       </div>
@@ -667,7 +668,7 @@ export default function Home() {
           {/* Visual — portrait + floating cards UI */}
           <div className="hero-visual" aria-hidden="true">
             <div className="hero-portrait-wrap">
-              <img src="/faces/hero-portrait.png" alt="" className="hero-face" />
+              <NextImage src="/faces/hero-portrait.png" alt="" className="hero-face" fill priority sizes="(max-width: 768px) 100vw, 50vw" style={{ objectFit: "cover", objectPosition: "center 15%" }} />
               <div className="hero-portrait-gradient" />
             </div>
 
@@ -787,7 +788,7 @@ export default function Home() {
             </button>
           </div>
           <div className="split-phone reveal reveal-delay-1">
-            <img src="/skinlu-hero-lifestyle.png" alt="" className="split-lifestyle-img" />
+            <NextImage src="/skinlu-hero-lifestyle.png" alt="" width={420} height={560} sizes="(max-width: 768px) 100vw, 420px" style={{ width: "100%", height: "auto", maxWidth: "420px", borderRadius: "18px" }} />
           </div>
         </div>
       </section>
@@ -1024,7 +1025,7 @@ export default function Home() {
       {/* ── 8. BANNIÈRE IMMERSIVE ────────────────────────────────── */}
       <section className="immersive-section" aria-label="Ambiance Skinlu">
         <div className="immersive-banner reveal">
-          <img src="/faces/banner.png" alt="" aria-hidden="true" className="immersive-img" />
+          <NextImage src="/faces/banner.png" alt="" fill sizes="100vw" style={{ objectFit: "cover" }} aria-hidden="true" />
           <div className="immersive-overlay">
             <div className="container">
               <span className="eyebrow">Anti-bullshit</span>
