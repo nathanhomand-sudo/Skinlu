@@ -3,6 +3,8 @@
 import { useState } from "react";
 import { getSupabaseBrowser } from "@/lib/supabase-client";
 
+const POST_AUTH_KEY = "skinlu:post-auth-action";
+
 export default function AuthGate() {
   const [email, setEmail] = useState("");
   const [emailSent, setEmailSent] = useState(false);
@@ -10,6 +12,7 @@ export default function AuthGate() {
   const [error, setError] = useState<string | null>(null);
 
   async function handleGoogle() {
+    window.localStorage.setItem(POST_AUTH_KEY, "scan");
     setLoading(true);
     const supabase = getSupabaseBrowser();
     await supabase.auth.signInWithOAuth({
@@ -23,6 +26,7 @@ export default function AuthGate() {
     if (!email.trim()) return;
     setLoading(true);
     setError(null);
+    window.localStorage.setItem(POST_AUTH_KEY, "scan");
     const supabase = getSupabaseBrowser();
     const { error: otpError } = await supabase.auth.signInWithOtp({
       email: email.trim(),
@@ -30,6 +34,7 @@ export default function AuthGate() {
     });
     setLoading(false);
     if (otpError) {
+      window.localStorage.removeItem(POST_AUTH_KEY);
       setError("Impossible d'envoyer le lien. Réessaie.");
     } else {
       setEmailSent(true);
@@ -41,7 +46,7 @@ export default function AuthGate() {
       <div className="auth-gate">
         <div className="auth-gate-sent">
           <strong>Vérifie tes emails ✓</strong>
-          <span>Un lien de connexion a été envoyé à {email}. Reviens ici après connexion pour débloquer ta routine.</span>
+          <span>Un lien de connexion a été envoyé à {email}. Clique dessus pour lancer ton scan.</span>
         </div>
       </div>
     );
@@ -49,10 +54,6 @@ export default function AuthGate() {
 
   return (
     <div className="auth-gate">
-      <div className="auth-gate-header">
-        <strong>Crée ton espace gratuit pour débloquer ta routine</strong>
-        <span>Ton diagnostic est prêt. Connecte-toi pour accéder à ta routine complète.</span>
-      </div>
       <button
         className="auth-google-btn"
         type="button"

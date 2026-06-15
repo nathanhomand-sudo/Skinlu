@@ -323,6 +323,7 @@ export default function Home() {
   const [routine, setRoutine] = useState<RoutineReport | null>(null);
   const [user, setUser] = useState<User | null>(null);
   const [scanModalOpen, setScanModalOpen] = useState(false);
+  const [signUpModalOpen, setSignUpModalOpen] = useState(false);
 
   useEffect(() => { track("landing_view"); }, []);
 
@@ -396,6 +397,10 @@ export default function Home() {
     track("hero_cta_click");
     if (diagnostic) {
       document.getElementById("diagnostic")?.scrollIntoView({ behavior: "smooth" });
+      return;
+    }
+    if (!user) {
+      setSignUpModalOpen(true);
       return;
     }
     setScanModalOpen(true);
@@ -561,6 +566,14 @@ export default function Home() {
               });
             } catch { /* non-fatal */ }
           }
+          const postAction = window.localStorage.getItem("skinlu:post-auth-action");
+          if (postAction === "scan") {
+            window.localStorage.removeItem("skinlu:post-auth-action");
+            if (!window.localStorage.getItem(DIAGNOSTIC_STORAGE_KEY)) {
+              setSignUpModalOpen(false);
+              setScanModalOpen(true);
+            }
+          }
         } else if (event === "SIGNED_OUT") {
           setUser(null);
         }
@@ -598,6 +611,34 @@ export default function Home() {
               previewUrl={null}
               disabled={loading}
             />
+          </div>
+        </div>
+      )}
+
+      {/* ── SIGN-UP MODAL ────────────────────────────────────────── */}
+      {signUpModalOpen && (
+        <div className="sign-up-modal" role="dialog" aria-modal="true" aria-label="Créer un compte Skinlu">
+          <div className="sum-backdrop" onClick={() => setSignUpModalOpen(false)} />
+          <div className="sum-card">
+            <div className="scan-modal-header">
+              <div className="scan-modal-identity">
+                <span className="scan-modal-logo">Skinlu</span>
+                <span className="scan-modal-badge">Gratuit</span>
+              </div>
+              <button
+                className="scan-modal-close"
+                type="button"
+                onClick={() => setSignUpModalOpen(false)}
+                aria-label="Fermer"
+              >
+                ✕
+              </button>
+            </div>
+            <div className="sum-body">
+              <h2 className="sum-title">Ton scan gratuit t&apos;attend.</h2>
+              <p className="sum-sub">Un compte. Un scan. Aucune carte demandée.</p>
+              <AuthGate />
+            </div>
           </div>
         </div>
       )}
@@ -665,7 +706,7 @@ export default function Home() {
             <div className="trust-strip">
               <span>Gratuit</span>
               <span>30s</span>
-              <span>Sans compte</span>
+              <span>Compte gratuit</span>
               <span>Analyse cosmétique indicative</span>
             </div>
             <p className="hero-microcopy">
@@ -739,9 +780,9 @@ export default function Home() {
                   <span>Tu obtiens une routine claire</span>
                 </div>
               </div>
-              <a href="#diagnostic" className="hero-cta" onClick={() => track("hero_cta_click")}>
+              <button type="button" className="hero-cta" onClick={handleHeroCta}>
                 Faire mon scan gratuit
-              </a>
+              </button>
             </div>
             <div className="phone-demo-frame reveal reveal-delay-1">
               <PhoneMockup />
@@ -976,9 +1017,7 @@ export default function Home() {
                         <span className="rbt-lock-cta">Ton plan est prêt →</span>
                       </div>
                     </div>
-                    {!user ? (
-                      <AuthGate />
-                    ) : (
+                    {user ? (
                       <>
                         <div className="paywall-block">
                           <h3 className="paywall-title">Ta routine sur-mesure est prête.</h3>
@@ -997,6 +1036,14 @@ export default function Home() {
                           Moins cher qu&apos;un produit acheté au hasard qui ne te sert à rien.
                         </p>
                       </>
+                    ) : (
+                      <button
+                        type="button"
+                        className="stripe-button"
+                        onClick={() => setSignUpModalOpen(true)}
+                      >
+                        Se connecter pour débloquer
+                      </button>
                     )}
                     {reportLoading ? (
                       <div className="diagnostic-spinner" role="status" aria-live="polite">
