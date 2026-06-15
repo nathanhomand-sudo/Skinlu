@@ -3,11 +3,7 @@
 import { useState } from "react";
 import { getSupabaseBrowser } from "@/lib/supabase-client";
 
-interface AuthGateProps {
-  onSkip: () => void;
-}
-
-export default function AuthGate({ onSkip }: AuthGateProps) {
+export default function AuthGate() {
   const [email, setEmail] = useState("");
   const [emailSent, setEmailSent] = useState(false);
   const [loading, setLoading] = useState(false);
@@ -45,11 +41,8 @@ export default function AuthGate({ onSkip }: AuthGateProps) {
       <div className="auth-gate">
         <div className="auth-gate-sent">
           <strong>Vérifie tes emails ✓</strong>
-          <span>Un lien de connexion a été envoyé à {email}.</span>
+          <span>Un lien de connexion a été envoyé à {email}. Reviens ici après connexion pour débloquer ta routine.</span>
         </div>
-        <button className="auth-skip" type="button" onClick={onSkip}>
-          Payer maintenant →
-        </button>
       </div>
     );
   }
@@ -57,8 +50,8 @@ export default function AuthGate({ onSkip }: AuthGateProps) {
   return (
     <div className="auth-gate">
       <div className="auth-gate-header">
-        <strong>Retrouve ta routine depuis n&apos;importe où</strong>
-        <span>Sauvegarde ton analyse en un clic.</span>
+        <strong>Crée ton espace gratuit pour débloquer ta routine</strong>
+        <span>Ton diagnostic est prêt. Connecte-toi pour accéder à ta routine complète.</span>
       </div>
       <button
         className="auth-google-btn"
@@ -94,9 +87,6 @@ export default function AuthGate({ onSkip }: AuthGateProps) {
         </button>
       </form>
       {error && <p className="auth-error">{error}</p>}
-      <button className="auth-skip" type="button" onClick={onSkip}>
-        Continuer directement →
-      </button>
     </div>
   );
 }

@@ -321,7 +321,6 @@ export default function Home() {
   );
   const [routine, setRoutine] = useState<RoutineReport | null>(null);
   const [user, setUser] = useState<User | null>(null);
-  const [skippedAuth, setSkippedAuth] = useState(false);
   const [scanModalOpen, setScanModalOpen] = useState(false);
 
   useEffect(() => { track("landing_view"); }, []);
@@ -965,25 +964,28 @@ export default function Home() {
                         <span className="rbt-lock-cta">Ton plan est prêt →</span>
                       </div>
                     </div>
-                    {!user && !skippedAuth && (
-                      <AuthGate onSkip={() => setSkippedAuth(true)} />
+                    {!user ? (
+                      <AuthGate />
+                    ) : (
+                      <>
+                        <div className="paywall-block">
+                          <h3 className="paywall-title">Ta routine sur-mesure est prête.</h3>
+                          <p className="paywall-subtitle">On a transformé ton analyse en un plan simple à suivre.</p>
+                          <ul className="paywall-deliverables">
+                            <li>Quoi appliquer, dans quel ordre</li>
+                            <li>Matin et soir, sans se tromper d&apos;étape</li>
+                            <li>Des produits adaptés à ta peau et ton budget</li>
+                            <li>Les erreurs à éviter pour améliorer tes résultats</li>
+                          </ul>
+                        </div>
+                        <button className="stripe-button" type="button" onClick={startCheckout} disabled={checkoutLoading}>
+                          {checkoutLoading ? "Ouverture de Stripe..." : "Débloquer ma routine personnalisée · 9,99 €"}
+                        </button>
+                        <p className="paywall-anchor">
+                          Moins cher qu&apos;un produit acheté au hasard qui ne te sert à rien.
+                        </p>
+                      </>
                     )}
-                    <div className="paywall-block">
-                      <h3 className="paywall-title">Ta routine sur-mesure est prête.</h3>
-                      <p className="paywall-subtitle">On a transformé ton analyse en un plan simple à suivre.</p>
-                      <ul className="paywall-deliverables">
-                        <li>Quoi appliquer, dans quel ordre</li>
-                        <li>Matin et soir, sans se tromper d&apos;étape</li>
-                        <li>Des produits adaptés à ta peau et ton budget</li>
-                        <li>Les erreurs à éviter pour améliorer tes résultats</li>
-                      </ul>
-                    </div>
-                    <button className="stripe-button" type="button" onClick={startCheckout} disabled={checkoutLoading}>
-                      {checkoutLoading ? "Ouverture de Stripe..." : "Débloquer ma routine personnalisée · 9,99 €"}
-                    </button>
-                    <p className="paywall-anchor">
-                      Moins cher qu&apos;un produit acheté au hasard qui ne te sert à rien.
-                    </p>
                     {reportLoading ? (
                       <div className="diagnostic-spinner" role="status" aria-live="polite">
                         <div className="spinner-ring" />
@@ -1075,7 +1077,7 @@ export default function Home() {
       </section>
 
       {/* ── MOBILE STICKY PAYWALL CTA (shown after result, mobile only) ── */}
-      {diagnostic && !routine && (
+      {diagnostic && !routine && user && (
         <div className="mobile-paywall-sticky" aria-hidden="true">
           <button className="stripe-button" type="button" onClick={startCheckout} disabled={checkoutLoading}>
             {checkoutLoading ? "Ouverture de Stripe..." : "Débloquer ma routine personnalisée · 9,99 €"}
