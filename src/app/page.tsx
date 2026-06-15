@@ -17,6 +17,7 @@ import type { Concern } from "@/lib/skin-diagnostic";
 import type { SkinType } from "@/lib/visual-age";
 import { getSupabaseBrowser } from "@/lib/supabase-client";
 import AuthGate from "@/components/AuthGate";
+import ProfileMenu from "@/components/ProfileMenu";
 import SkinScanCabin, { type SkinScanCabinHandle } from "@/components/SkinScanCabin";
 import { track } from "@/lib/track";
 
@@ -468,7 +469,7 @@ export default function Home() {
         );
       }
       setDiagnostic(data as DiagnosticPreview);
-      window.localStorage.setItem(DIAGNOSTIC_STORAGE_KEY, JSON.stringify(data));
+      window.localStorage.setItem(DIAGNOSTIC_STORAGE_KEY, JSON.stringify({ ...data, scanned_at: new Date().toISOString() }));
       track("analysis_success", { skin_type: data.skin_type, top_priority: data.top_priority });
       window.setTimeout(() => {
         document.getElementById("diagnostic")?.scrollIntoView({ behavior: "smooth", block: "start" });
@@ -691,6 +692,16 @@ export default function Home() {
           </div>
         </div>
       )}
+
+      {/* ── SITE NAV ─────────────────────────────────────────────── */}
+      <header className="site-nav">
+        <div className="container site-nav-inner">
+          <a href="/" className="site-nav-logo">Skinlu</a>
+          {user && (
+            <ProfileMenu user={user} hasDiagnostic={!!diagnostic} />
+          )}
+        </div>
+      </header>
 
       {/* ── 1. HERO ──────────────────────────────────────────────── */}
       <section className="hero-section" aria-labelledby="product-title">

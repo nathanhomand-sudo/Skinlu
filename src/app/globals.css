@@ -3492,3 +3492,322 @@ h1 span { color: var(--accent); }
 .sum-body .auth-error { color: #f87171; }
 .sum-body .auth-gate-sent strong { color: #4ade80; }
 .sum-body .auth-gate-sent span { color: rgba(255, 255, 255, 0.5); }
+
+/* ─── Site Nav ───────────────────────────────────────────────── */
+.site-nav {
+  position: sticky;
+  top: 0;
+  z-index: 50;
+  height: 54px;
+  display: flex;
+  align-items: center;
+  background: rgba(248, 246, 241, 0.88);
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
+  border-bottom: 1px solid var(--border);
+}
+.site-nav-inner {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+.site-nav-logo {
+  font-weight: 800;
+  font-size: 1rem;
+  letter-spacing: -0.02em;
+  color: var(--ink);
+  text-decoration: none;
+}
+.site-nav-logo:hover { color: var(--accent); }
+
+/* ─── Profile Menu ───────────────────────────────────────────── */
+.profile-menu { position: relative; }
+.profile-avatar-btn {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  border: 2px solid var(--accent);
+  background: var(--accent);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  transition: background 0.15s, border-color 0.15s;
+}
+.profile-avatar-btn:hover { background: var(--accent-hover); border-color: var(--accent-hover); }
+.profile-avatar {
+  font-size: 0.8rem;
+  font-weight: 700;
+  color: #fff;
+  line-height: 1;
+  user-select: none;
+}
+.profile-dropdown {
+  position: absolute;
+  top: calc(100% + 8px);
+  right: 0;
+  min-width: 230px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1), 0 2px 8px rgba(0, 0, 0, 0.06);
+  overflow: hidden;
+  z-index: 100;
+  animation: dropdownIn 0.12s ease;
+}
+@keyframes dropdownIn {
+  from { opacity: 0; transform: translateY(-6px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+.profile-dropdown-user {
+  padding: 0.85rem 1rem 0.75rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.08rem;
+}
+.profile-dropdown-name {
+  font-size: 0.875rem;
+  font-weight: 700;
+  color: var(--ink);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.profile-dropdown-email {
+  font-size: 0.78rem;
+  color: var(--text-secondary);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.profile-dropdown-status {
+  font-size: 0.7rem;
+  font-weight: 600;
+  color: var(--accent);
+  margin-top: 0.2rem;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+.profile-dropdown-sep {
+  border: none;
+  border-top: 1px solid var(--border);
+  margin: 0;
+}
+.profile-dropdown-item {
+  display: block;
+  width: 100%;
+  padding: 0.65rem 1rem;
+  text-align: left;
+  text-decoration: none;
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: var(--ink);
+  background: none;
+  border: none;
+  cursor: pointer;
+  transition: background 0.1s;
+  font-family: inherit;
+}
+.profile-dropdown-item:hover { background: var(--surface-hi); }
+.profile-dropdown-item--danger { color: var(--danger); }
+.profile-dropdown-item--danger:hover { background: #fef2f2; }
+
+/* ─── Account Page ───────────────────────────────────────────── */
+.account-page,
+.history-page {
+  min-height: 100vh;
+  background: var(--bg-main);
+  padding: 2.5rem 0 5rem;
+}
+.account-container {
+  width: min(100% - 40px, 480px);
+  margin: 0 auto;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.75rem;
+}
+.account-back {
+  align-self: flex-start;
+  font-size: 0.85rem;
+  color: var(--text-secondary);
+  text-decoration: none;
+  margin-bottom: 0.75rem;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.2rem;
+  transition: color 0.1s;
+}
+.account-back:hover { color: var(--ink); }
+.account-avatar-wrap { margin: 0.5rem 0 0.25rem; }
+.account-avatar {
+  width: 64px;
+  height: 64px;
+  border-radius: 50%;
+  background: var(--accent);
+  color: #fff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.5rem;
+  font-weight: 700;
+  user-select: none;
+}
+.account-name {
+  font-size: 1.1rem;
+  font-weight: 700;
+  color: var(--ink);
+  letter-spacing: -0.01em;
+}
+.account-email {
+  font-size: 0.875rem;
+  color: var(--text-secondary);
+}
+.account-status-badge {
+  margin-top: 0.25rem;
+  padding: 0.3rem 0.85rem;
+  border: 1.5px solid var(--border-strong);
+  border-radius: 20px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: var(--accent);
+  background: var(--surface-hi);
+  letter-spacing: 0.01em;
+}
+.account-actions {
+  margin-top: 1.25rem;
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+.account-link-btn {
+  display: block;
+  text-align: center;
+  text-decoration: none;
+  padding: 0.75rem 1rem;
+  border: 1.5px solid var(--border-strong);
+  border-radius: 10px;
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: var(--ink);
+  background: var(--surface);
+  transition: border-color 0.12s, background 0.12s;
+}
+.account-link-btn:hover { border-color: var(--accent); background: var(--surface-hi); }
+.account-signout-btn {
+  padding: 0.75rem 1rem;
+  border: 1.5px solid transparent;
+  border-radius: 10px;
+  background: none;
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: var(--danger);
+  cursor: pointer;
+  font-family: inherit;
+  transition: border-color 0.12s, background 0.12s;
+}
+.account-signout-btn:hover { border-color: var(--danger); background: #fef2f2; }
+.account-loading {
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.875rem;
+  color: var(--text-secondary);
+}
+
+/* ─── History Page ───────────────────────────────────────────── */
+.history-title {
+  font-size: 1.5rem;
+  font-weight: 800;
+  color: var(--ink);
+  letter-spacing: -0.025em;
+  align-self: flex-start;
+  margin-bottom: 0.25rem;
+}
+.history-card {
+  width: 100%;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  overflow: hidden;
+}
+.hc-meta {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0.7rem 1rem;
+  background: var(--surface-hi);
+  border-bottom: 1px solid var(--border);
+}
+.hc-label {
+  font-size: 0.75rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--accent);
+}
+.hc-date {
+  font-size: 0.78rem;
+  color: var(--text-secondary);
+}
+.hc-body {
+  padding: 1rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.7rem;
+}
+.hc-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+}
+.hc-row span {
+  font-size: 0.82rem;
+  color: var(--text-secondary);
+}
+.hc-row strong {
+  font-size: 0.875rem;
+  font-weight: 700;
+  color: var(--ink);
+}
+.hc-concerns {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.35rem;
+  padding-top: 0.1rem;
+}
+.hc-badge {
+  padding: 0.2rem 0.6rem;
+  background: var(--bg-alt);
+  border-radius: 20px;
+  font-size: 0.75rem;
+  color: var(--text-secondary);
+}
+.hc-cta {
+  display: block;
+  padding: 0.85rem 1rem;
+  text-align: center;
+  text-decoration: none;
+  background: var(--accent);
+  color: #fff;
+  font-size: 0.9rem;
+  font-weight: 700;
+  border-top: 1px solid var(--border);
+  transition: background 0.12s;
+}
+.hc-cta:hover { background: var(--accent-hover); }
+.history-empty {
+  width: 100%;
+  text-align: center;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1.5rem;
+  padding: 3rem 0;
+  color: var(--text-secondary);
+}
+.history-empty p { font-size: 0.95rem; }
