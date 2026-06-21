@@ -205,8 +205,15 @@ function calloutLabel(concern: Concern | null): string {
 }
 
 function shortSummary(summary: string) {
-  const firstSentence = summary.split(/(?<=[.!?])\s+/)[0]?.trim() ?? summary;
-  return firstSentence.length > 72 ? `${firstSentence.slice(0, 69).trim()}…` : firstSentence;
+  const first = (summary.split(/(?<=[.!?])\s+/)[0] ?? summary).trim();
+  if (first.length <= 78) return first;
+  // Prefer a natural comma break
+  const commaIdx = first.indexOf(',');
+  if (commaIdx >= 28 && commaIdx <= 72) return `${first.slice(0, commaIdx)}…`;
+  // Fall back to last word boundary before 72 chars
+  const cut = first.slice(0, 72);
+  const lastSpace = cut.lastIndexOf(' ');
+  return `${cut.slice(0, lastSpace > 28 ? lastSpace : 72).trimEnd()}…`;
 }
 
 function isBboxValid(bbox: FaceBbox): boolean {
@@ -255,9 +262,12 @@ function computeFaceLayout(bbox: FaceBbox, container: HTMLDivElement): FaceLayou
 
   const callouts: CalloutPositions = {
     // Fractions relative to MediaPipe bbox: top=0%, chin=100%
-    forehead: pos(originX + width * 0.50, originY + height * 0.20),  // upper forehead
-    t_zone:   pos(originX + width * 0.46, originY + height * 0.42),  // nose bridge
-    cheeks:   pos(originX + width * 0.74, originY + height * 0.48),  // right cheek (viewer's right)
+    // forehead: left-of-center dot, bubble extends RIGHT (avoids overlap with t_zone)
+    forehead: pos(originX + width * 0.40, originY + height * 0.18),
+    // t_zone: center dot, bubble extends LEFT — nose tip area
+    t_zone:   pos(originX + width * 0.50, originY + height * 0.46),
+    // cheeks: right-of-center dot, bubble extends RIGHT
+    cheeks:   pos(originX + width * 0.74, originY + height * 0.48),
   };
 
   if (DEBUG_CALLOUTS) console.log("[Skinlu Debug] callout positions", callouts);
@@ -271,8 +281,8 @@ function computeFaceLayout(bbox: FaceBbox, container: HTMLDivElement): FaceLayou
 
   // Mini-crop object-position: center on the face zone within that crop container
   const cxPct = (cx / imgWidth * 100).toFixed(1);
-  const cropFront = `${cxPct}% ${((originY + height * 0.20) / imgHeight * 100).toFixed(1)}%`;
-  const cropTzone = `${cxPct}% ${((originY + height * 0.44) / imgHeight * 100).toFixed(1)}%`;
+  const cropFront = `${cxPct}% ${((originY + height * 0.18) / imgHeight * 100).toFixed(1)}%`;
+  const cropTzone = `${cxPct}% ${((originY + height * 0.46) / imgHeight * 100).toFixed(1)}%`;
 
   return { objectPosition, callouts, debugBbox, cropFront, cropTzone };
 }
@@ -1197,7 +1207,7 @@ export default function Home() {
                           />
                           {faceLayout && diagnostic.zones ? (
                             <div className="callout-layer" aria-hidden="true">
-                              <div className="callout callout--left" style={faceLayout.callouts.forehead}>
+                              <div className="callout callout--right" style={faceLayout.callouts.forehead}>
                                 <span className="callout-dot" />
                                 <span className="callout-line" />
                                 <span className="callout-bubble">
