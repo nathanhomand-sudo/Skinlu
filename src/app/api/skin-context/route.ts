@@ -154,6 +154,11 @@ export async function POST(request: Request) {
       top_priority: diagnostic.top_priority,
       summary: diagnostic.summary,
       disclaimer: "Analyse cosmetique indicative. Ne remplace pas l'avis d'un professionnel de sante.",
+      zones: diagnostic.zones ?? null,
+      confidence: diagnostic.confidence ?? null,
+      confidence_reason: diagnostic.confidence_reason ?? null,
+      skin_priority: diagnostic.skin_priority ?? null,
+      derma_flag: diagnostic.derma_flag ?? false,
     });
   } catch (error) {
     console.error("skin_diagnostic_failed", error);

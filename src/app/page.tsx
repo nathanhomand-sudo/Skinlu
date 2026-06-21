@@ -72,6 +72,11 @@ const LOADING_STEPS = [
   "Création de ton profil peau",
 ];
 
+type DiagnosticZone = {
+  observation: string;
+  concern: Concern | null;
+};
+
 type DiagnosticPreview = {
   session_token: string;
   skin_type: SkinType;
@@ -79,6 +84,16 @@ type DiagnosticPreview = {
   top_priority: Concern;
   summary: string;
   disclaimer: string;
+  zones?: {
+    forehead: DiagnosticZone;
+    cheeks: DiagnosticZone;
+    t_zone: DiagnosticZone;
+    texture: DiagnosticZone;
+  } | null;
+  confidence?: number | null;
+  confidence_reason?: string | null;
+  skin_priority?: string | null;
+  derma_flag?: boolean;
 };
 
 type RoutineReport = {
@@ -992,6 +1007,61 @@ export default function Home() {
                         </span>
                       ))}
                     </div>
+                    {diagnostic.zones ? (
+                      <div className="zone-analysis">
+                        <p className="zone-analysis-label">Ce qu&apos;on a observé zone par zone</p>
+                        <div className="zone-grid">
+                          {(
+                            [
+                              { key: "forehead", label: "Front" },
+                              { key: "cheeks", label: "Joues" },
+                              { key: "t_zone", label: "Zone T" },
+                              { key: "texture", label: "Texture" },
+                            ] as const
+                          ).map(({ key, label }) => {
+                            const zone = diagnostic.zones![key];
+                            return (
+                              <div key={key} className="zone-card">
+                                <span className="zone-name">{label}</span>
+                                <p className="zone-obs">{zone.observation}</p>
+                                {zone.concern ? (
+                                  <span className={`zone-concern concern-badge concern-badge--${zone.concern}`}>
+                                    {concernLabel(zone.concern)}
+                                  </span>
+                                ) : (
+                                  <span className="zone-concern zone-concern--ok">Aucun signe notable</span>
+                                )}
+                              </div>
+                            );
+                          })}
+                        </div>
+                      </div>
+                    ) : null}
+                    {diagnostic.skin_priority ? (
+                      <p className="skin-priority-row">{diagnostic.skin_priority}</p>
+                    ) : null}
+                    {diagnostic.confidence != null ? (
+                      <div className="confidence-row">
+                        <span className="confidence-label">
+                          Fiabilité de l&apos;analyse&nbsp;: <strong>{Math.round(diagnostic.confidence * 100)}&nbsp;%</strong>
+                        </span>
+                        <div className="confidence-bar-outer" aria-hidden="true">
+                          <div
+                            className="confidence-bar-inner"
+                            style={{ width: `${Math.round(diagnostic.confidence * 100)}%` }}
+                          />
+                        </div>
+                        {diagnostic.confidence_reason ? (
+                          <p className="confidence-reason">{diagnostic.confidence_reason}</p>
+                        ) : null}
+                      </div>
+                    ) : null}
+                    {diagnostic.derma_flag ? (
+                      <div className="derma-notice" role="note">
+                        <span className="derma-notice-icon">⚠</span>
+                        <p>Certains signes observés méritent l&apos;avis d&apos;un professionnel de santé.</p>
+                      </div>
+                    ) : null}
                     <div className="post-scan-questions">
                       <p className="psq-header">Affine ton résultat</p>
                       {PROFILE_QUESTIONS.slice(0, 2).map((item) => (
