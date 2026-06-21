@@ -36,6 +36,16 @@ const CONCERN_LABELS: Record<Concern, string> = {
   enlarged_pores: "Pores visibles",
 };
 
+const CALLOUT_LABELS: Record<Concern, string> = {
+  acne: "Imperfections",
+  dehydration: "Sécheresse",
+  dark_spots: "Taches",
+  aging: "Signes d'âge",
+  sensitivity: "Rougeurs",
+  dullness: "Teint terne",
+  enlarged_pores: "Pores visibles",
+};
+
 const SKIN_TYPE_LABELS: Record<SkinType, string> = {
   dry: "sèche",
   oily: "grasse",
@@ -151,6 +161,11 @@ function routineFocusLabel(concern: Concern) {
     enlarged_pores: "Alléger la routine et lisser la texture",
   };
   return labels[concern];
+}
+
+function calloutLabel(concern: Concern | null): string {
+  if (!concern) return "Aucun signe";
+  return CALLOUT_LABELS[concern];
 }
 
 function shortSummary(summary: string) {
@@ -978,68 +993,134 @@ export default function Home() {
 
                 {diagnostic ? (
                   <div className="result-panel" role="status" aria-live="polite">
-                    <div className="free-preview-header">
-                      <span className="status-label">Ce que Skinlu remarque</span>
-                      <strong>Analyse indicative</strong>
-                    </div>
-                    <p className="preview-summary">{shortSummary(diagnostic.summary)}</p>
+
+                    {/* ── 1. PHOTO ANNOTÉE ─────────────────────────── */}
+                    {previewUrl ? (
+                      <div className="debrief-photo-wrap">
+                        <div className="annotated-selfie">
+                          <img
+                            src={previewUrl}
+                            alt="Ta peau analysée"
+                            className="annotated-selfie-img"
+                          />
+                          {diagnostic.zones ? (
+                            <div className="callout-layer" aria-hidden="true">
+                              {/* Left callouts */}
+                              <div className="callout callout--left" style={{ top: "18%", left: "50%" }}>
+                                <span className="callout-dot" />
+                                <span className="callout-line" />
+                                <span className="callout-bubble">
+                                  <span className="callout-zone-name">Front</span>
+                                  <span>{calloutLabel(diagnostic.zones.forehead.concern)}</span>
+                                </span>
+                              </div>
+                              <div className="callout callout--left" style={{ top: "60%", left: "46%" }}>
+                                <span className="callout-dot" />
+                                <span className="callout-line callout-line--sm" />
+                                <span className="callout-bubble">
+                                  <span className="callout-zone-name">Zone T</span>
+                                  <span>{calloutLabel(diagnostic.zones.t_zone.concern)}</span>
+                                </span>
+                              </div>
+                              {/* Right callouts */}
+                              <div className="callout callout--right" style={{ top: "40%", left: "68%" }}>
+                                <span className="callout-dot" />
+                                <span className="callout-line callout-line--sm" />
+                                <span className="callout-bubble">
+                                  <span className="callout-zone-name">Joues</span>
+                                  <span>{calloutLabel(diagnostic.zones.cheeks.concern)}</span>
+                                </span>
+                              </div>
+                              <div className="callout callout--right callout--mobile-hide" style={{ top: "74%", left: "54%" }}>
+                                <span className="callout-dot" />
+                                <span className="callout-line" />
+                                <span className="callout-bubble">
+                                  <span className="callout-zone-name">Texture</span>
+                                  <span>{calloutLabel(diagnostic.zones.texture.concern)}</span>
+                                </span>
+                              </div>
+                            </div>
+                          ) : null}
+                        </div>
+                        {/* Mini crops */}
+                        {diagnostic.zones ? (
+                          <div className="debrief-crops">
+                            <div className="zone-crop">
+                              <div className="zone-crop-frame">
+                                <img src={previewUrl} alt="" className="zone-crop-img" style={{ objectPosition: "center top" }} />
+                              </div>
+                              <div className="zone-crop-meta">
+                                <span className="zone-crop-name">Front</span>
+                                <span className="zone-crop-obs">{calloutLabel(diagnostic.zones.forehead.concern)}</span>
+                              </div>
+                            </div>
+                            <div className="zone-crop">
+                              <div className="zone-crop-frame">
+                                <img src={previewUrl} alt="" className="zone-crop-img" style={{ objectPosition: "center 70%" }} />
+                              </div>
+                              <div className="zone-crop-meta">
+                                <span className="zone-crop-name">Zone T</span>
+                                <span className="zone-crop-obs">{calloutLabel(diagnostic.zones.t_zone.concern)}</span>
+                              </div>
+                            </div>
+                          </div>
+                        ) : null}
+                      </div>
+                    ) : null}
+
+                    {/* ── 2. SUMMARY ───────────────────────────────── */}
+                    <p className="debrief-summary">{shortSummary(diagnostic.summary)}</p>
+
+                    {/* ── 3. CARDS ─────────────────────────────────── */}
                     <div className="preview-cards">
                       <article className="preview-card">
                         <span>Type probable</span>
                         <strong>Peau {skinTypeLabel(diagnostic.skin_type)}</strong>
-                        <small>Indicatif, basé sur les signes visibles</small>
+                        <small>Indicatif, signes visibles</small>
                       </article>
                       <article className="preview-card" data-concern={diagnostic.top_priority}>
-                        <span>Priorité principale</span>
+                        <span>Priorité</span>
                         <strong>{concernLabel(diagnostic.top_priority)}</strong>
                         <small>{priorityLabel(diagnostic.top_priority)}</small>
                       </article>
                       <article className="preview-card preview-card--accent">
-                        <span>Direction routine</span>
+                        <span>Direction</span>
                         <strong>{routineFocusLabel(diagnostic.top_priority)}</strong>
-                        <small>Ordre AM/PM débloqué ci-dessous</small>
+                        <small>Routine AM/PM ci-dessous</small>
                       </article>
                     </div>
-                    <div className="concern-list">
-                      {diagnostic.concerns.map((concern) => (
-                        <span key={concern} className={`concern-badge concern-badge--${concern}`}>
-                          {concernLabel(concern)}
-                        </span>
-                      ))}
-                    </div>
+
+                    {/* ── 4. ZONES DÉTAIL ──────────────────────────── */}
                     {diagnostic.zones ? (
-                      <div className="zone-analysis">
-                        <p className="zone-analysis-label">Ce qu&apos;on a observé zone par zone</p>
-                        <div className="zone-grid">
-                          {(
-                            [
-                              { key: "forehead", label: "Front" },
-                              { key: "cheeks", label: "Joues" },
-                              { key: "t_zone", label: "Zone T" },
-                              { key: "texture", label: "Texture" },
-                            ] as const
-                          ).map(({ key, label }) => {
-                            const zone = diagnostic.zones![key];
-                            return (
-                              <div key={key} className="zone-card">
-                                <span className="zone-name">{label}</span>
-                                <p className="zone-obs">{zone.observation}</p>
-                                {zone.concern ? (
-                                  <span className={`zone-concern concern-badge concern-badge--${zone.concern}`}>
-                                    {concernLabel(zone.concern)}
-                                  </span>
-                                ) : (
-                                  <span className="zone-concern zone-concern--ok">Aucun signe notable</span>
-                                )}
-                              </div>
-                            );
-                          })}
-                        </div>
+                      <div className="debrief-zone-list">
+                        {(
+                          [
+                            { key: "forehead" as const, label: "Front" },
+                            { key: "cheeks" as const, label: "Joues" },
+                            { key: "t_zone" as const, label: "Zone T" },
+                            { key: "texture" as const, label: "Texture" },
+                          ]
+                        ).map(({ key, label }) => {
+                          const zones = diagnostic.zones!;
+                          const zone = zones[key];
+                          return (
+                            <div key={key} className="debrief-zone-row">
+                              <span className="dzr-name">{label}</span>
+                              <span className="dzr-obs">{zone.observation}</span>
+                              {zone.concern ? (
+                                <span className={`dzr-badge concern-badge concern-badge--${zone.concern}`}>
+                                  {calloutLabel(zone.concern)}
+                                </span>
+                              ) : (
+                                <span className="dzr-badge dzr-badge--ok">Aucun signe</span>
+                              )}
+                            </div>
+                          );
+                        })}
                       </div>
                     ) : null}
-                    {diagnostic.skin_priority ? (
-                      <p className="skin-priority-row">{diagnostic.skin_priority}</p>
-                    ) : null}
+
+                    {/* ── 5. FIABILITÉ ─────────────────────────────── */}
                     {diagnostic.confidence != null ? (
                       <div className="confidence-row">
                         <span className="confidence-label">
@@ -1051,7 +1132,7 @@ export default function Home() {
                             style={{ width: `${Math.round(diagnostic.confidence * 100)}%` }}
                           />
                         </div>
-                        {diagnostic.confidence_reason ? (
+                        {diagnostic.confidence < 0.7 && diagnostic.confidence_reason ? (
                           <p className="confidence-reason">{diagnostic.confidence_reason}</p>
                         ) : null}
                       </div>
@@ -1062,27 +1143,11 @@ export default function Home() {
                         <p>Certains signes observés méritent l&apos;avis d&apos;un professionnel de santé.</p>
                       </div>
                     ) : null}
-                    <div className="post-scan-questions">
-                      <p className="psq-header">Affine ton résultat</p>
-                      {PROFILE_QUESTIONS.slice(0, 2).map((item) => (
-                        <div key={item.key} className="psq-row">
-                          <span className="psq-question">{item.question}</span>
-                          <div className="psq-options">
-                            {item.options.map((opt) => (
-                              <button
-                                key={opt}
-                                type="button"
-                                className={skinProfile[item.key] === opt ? "psq-opt is-selected" : "psq-opt"}
-                                onClick={() => updateSkinProfile(item.key, opt)}
-                              >
-                                {opt}
-                              </button>
-                            ))}
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-                    <p className="routine-alert">Évite d&apos;ajouter de nouveaux produits avant d&apos;avoir clarifié ta routine.</p>
+
+                    {/* ── 6. DISCLAIMER ────────────────────────────── */}
+                    <p className="debrief-disclaimer">{diagnostic.disclaimer}</p>
+
+                    {/* ── 7. PAYWALL ───────────────────────────────── */}
                     <div className="routine-blur-teaser" aria-hidden="true">
                       <div className="rbt-rows">
                         <div className="rbt-section-label">Matin</div>
