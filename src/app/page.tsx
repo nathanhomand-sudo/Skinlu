@@ -25,7 +25,7 @@ const ACCEPTED_TYPES = ["image/jpeg", "image/png", "image/webp"];
 const MAX_FILE_SIZE = 4 * 1024 * 1024;
 const ANALYSIS_TIMEOUT_MS = 70_000;
 const DIAGNOSTIC_STORAGE_KEY = "skinlu:last-diagnostic";
-const DEBUG_CALLOUTS = true;
+const DEBUG_CALLOUTS = false;
 
 const MP_WASM_URL =
   "https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@0.10.35/wasm";
@@ -207,7 +207,7 @@ function calloutLabel(concern: Concern | null): string {
 
 function shortSummary(summary: string) {
   const firstSentence = summary.split(/(?<=[.!?])\s+/)[0]?.trim() ?? summary;
-  return firstSentence.length > 100 ? `${firstSentence.slice(0, 97).trim()}…` : firstSentence;
+  return firstSentence.length > 72 ? `${firstSentence.slice(0, 69).trim()}…` : firstSentence;
 }
 
 function isBboxValid(bbox: FaceBbox): boolean {
@@ -228,9 +228,10 @@ function computeFaceLayout(bbox: FaceBbox, container: HTMLDivElement): FaceLayou
   const overflowX = Math.max(0, imgWidth * scale - contW);
   const overflowY = Math.max(0, imgHeight * scale - contH);
 
-  // Center the crop on the face
+  // Center crop slightly above face center so forehead has breathing room
+  const anchorY = originY + height * 0.40;
   const hiddenLeft = Math.max(0, Math.min(overflowX, cx * scale - contW / 2));
-  const hiddenTop  = Math.max(0, Math.min(overflowY, cy * scale - contH / 2));
+  const hiddenTop  = Math.max(0, Math.min(overflowY, anchorY * scale - contH / 2));
   const pctX = overflowX > 0 ? hiddenLeft / overflowX * 100 : 50;
   const pctY = overflowY > 0 ? hiddenTop  / overflowY * 100 : 50;
   const objectPosition = `${pctX.toFixed(1)}% ${pctY.toFixed(1)}%`;
