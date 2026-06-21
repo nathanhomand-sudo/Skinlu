@@ -99,9 +99,8 @@ type FaceBbox = {
 
 type CalloutPositions = {
   forehead: { top: string; left: string };
-  cheeks:   { top: string; left: string };
   t_zone:   { top: string; left: string };
-  texture:  { top: string; left: string };
+  cheeks:   { top: string; left: string };
 };
 
 type DebugBboxStyle = {
@@ -255,10 +254,10 @@ function computeFaceLayout(bbox: FaceBbox, container: HTMLDivElement): FaceLayou
   });
 
   const callouts: CalloutPositions = {
-    forehead: pos(originX + width * 0.50, originY + height * 0.16),
-    cheeks:   pos(originX + width * 0.72, originY + height * 0.48),
-    t_zone:   pos(originX + width * 0.48, originY + height * 0.60),
-    texture:  pos(originX + width * 0.52, originY + height * 0.76),
+    // Fractions relative to MediaPipe bbox: top=0%, chin=100%
+    forehead: pos(originX + width * 0.50, originY + height * 0.20),  // upper forehead
+    t_zone:   pos(originX + width * 0.46, originY + height * 0.42),  // nose bridge
+    cheeks:   pos(originX + width * 0.74, originY + height * 0.48),  // right cheek (viewer's right)
   };
 
   if (DEBUG_CALLOUTS) console.log("[Skinlu Debug] callout positions", callouts);
@@ -272,8 +271,8 @@ function computeFaceLayout(bbox: FaceBbox, container: HTMLDivElement): FaceLayou
 
   // Mini-crop object-position: center on the face zone within that crop container
   const cxPct = (cx / imgWidth * 100).toFixed(1);
-  const cropFront = `${cxPct}% ${((originY + height * 0.16) / imgHeight * 100).toFixed(1)}%`;
-  const cropTzone = `${cxPct}% ${((originY + height * 0.60) / imgHeight * 100).toFixed(1)}%`;
+  const cropFront = `${cxPct}% ${((originY + height * 0.20) / imgHeight * 100).toFixed(1)}%`;
+  const cropTzone = `${cxPct}% ${((originY + height * 0.44) / imgHeight * 100).toFixed(1)}%`;
 
   return { objectPosition, callouts, debugBbox, cropFront, cropTzone };
 }
@@ -1220,14 +1219,6 @@ export default function Home() {
                                 <span className="callout-bubble">
                                   <span className="callout-zone-name">Joues</span>
                                   <span>{calloutLabel(diagnostic.zones.cheeks.concern)}</span>
-                                </span>
-                              </div>
-                              <div className="callout callout--right callout--mobile-hide" style={faceLayout.callouts.texture}>
-                                <span className="callout-dot" />
-                                <span className="callout-line" />
-                                <span className="callout-bubble">
-                                  <span className="callout-zone-name">Texture</span>
-                                  <span>{calloutLabel(diagnostic.zones.texture.concern)}</span>
                                 </span>
                               </div>
                             </div>
