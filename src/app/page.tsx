@@ -26,6 +26,8 @@ const MAX_FILE_SIZE = 4 * 1024 * 1024;
 const ANALYSIS_TIMEOUT_MS = 70_000;
 const DIAGNOSTIC_STORAGE_KEY = "skinlu:last-diagnostic";
 const DEBUG_CALLOUTS = false;
+const ANNOT_PADDING = 60; // px each side for label columns
+const LABEL_MIN_GAP = 30; // px minimum vertical gap between labels on the same side
 
 const MP_WASM_URL =
   "https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@0.10.35/wasm";
@@ -50,6 +52,17 @@ const CALLOUT_LABELS: Record<Concern, string> = {
   sensitivity: "Rougeurs",
   dullness: "Teint terne",
   enlarged_pores: "Pores visibles",
+};
+
+// Short labels for margin annotations (must fit in ~60px column)
+const ANNOT_LABELS: Record<Concern, string> = {
+  acne: "Acné",
+  dehydration: "Déshydr.",
+  dark_spots: "Taches",
+  aging: "Signes âge",
+  sensitivity: "Rougeurs",
+  dullness: "Terne",
+  enlarged_pores: "Pores",
 };
 
 const SKIN_TYPE_LABELS: Record<SkinType, string> = {
@@ -116,6 +129,16 @@ type FaceLayout = {
   debugBbox: DebugBboxStyle;
   cropFront: string;
   cropTzone: string;
+};
+
+type AnnotSvgItem = {
+  zoneName: string;
+  concern: Concern | null;
+  side: "left" | "right";
+  dotX: number;    // px in wrapper SVG coordinate space
+  dotY: number;
+  lineEndX: number; // where the line meets the label column
+  labelY: number;  // label vertical center, px
 };
 
 type DiagnosticZone = {
@@ -202,6 +225,59 @@ function routineFocusLabel(concern: Concern) {
 function calloutLabel(concern: Concern | null): string {
   if (!concern) return "Aucun signe";
   return CALLOUT_LABELS[concern];
+}
+
+function annotLabel(concern: Concern | null): string {
+  if (!concern) return "Aucun";
+  return ANNOT_LABELS[concern] ?? CALLOUT_LABELS[concern];
+}
+
+function computeAnnotations(
+  layout: FaceLayout,
+  zones: NonNullable<DiagnosticPreview["zones"]>,
+  photoEl: HTMLDivElement,
+): AnnotSvgItem[] {
+  const W = photoEl.offsetWidth;
+  const H = photoEl.offsetHeight;
+  const PAD = ANNOT_PADDING;
+
+  const toItem = (
+    dotLeft: string, dotTop: string,
+    side: "left" | "right",
+    concern: Concern | null,
+    zoneName: string,
+  ): AnnotSvgItem => {
+    const dotX = PAD + parseFloat(dotLeft) / 100 * W;
+    const dotY = parseFloat(dotTop) / 100 * H;
+    return {
+      zoneName, concern, side, dotX, dotY,
+      lineEndX: side === "left" ? PAD - 3 : PAD + W + 3,
+      labelY: dotY,
+    };
+  };
+
+  const items: AnnotSvgItem[] = [];
+
+  // Skip forehead if it duplicates t_zone concern
+  if (zones.forehead.concern !== zones.t_zone.concern) {
+    items.push(toItem(layout.callouts.forehead.left, layout.callouts.forehead.top, "right", zones.forehead.concern, "Front"));
+  }
+  items.push(toItem(layout.callouts.t_zone.left, layout.callouts.t_zone.top, "left", zones.t_zone.concern, "Zone T"));
+  items.push(toItem(layout.callouts.cheeks.left, layout.callouts.cheeks.top, "right", zones.cheeks.concern, "Joues"));
+
+  // Vertical collision avoidance per side
+  (["left", "right"] as const).forEach(side => {
+    const sideItems = items.filter(i => i.side === side).sort((a, b) => a.labelY - b.labelY);
+    for (let i = 1; i < sideItems.length; i++) {
+      const overlap = LABEL_MIN_GAP - (sideItems[i].labelY - sideItems[i - 1].labelY);
+      if (overlap > 0) {
+        sideItems[i - 1].labelY = Math.max(14, sideItems[i - 1].labelY - overlap / 2);
+        sideItems[i].labelY = Math.min(H - 14, sideItems[i].labelY + overlap / 2);
+      }
+    }
+  });
+
+  return items;
 }
 
 function shortSummary(summary: string) {
@@ -459,6 +535,7 @@ export default function Home() {
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
   const [faceBbox, setFaceBbox] = useState<FaceBbox | null>(null);
   const [faceLayout, setFaceLayout] = useState<FaceLayout | null>(null);
+  const [annotations, setAnnotations] = useState<AnnotSvgItem[] | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [skinProfile, setSkinProfile] = useState<SkinProfileAnswers>({});
   const [loading, setLoading] = useState(false);
@@ -476,13 +553,16 @@ export default function Home() {
   // Cleanup IMAGE-mode detector on unmount
   useEffect(() => () => { imageDetectorRef.current?.close(); }, []);
 
-  // Recompute face layout whenever bbox or debrief mounts (diagnostic triggers the container to appear)
   useEffect(() => {
     if (!faceBbox || !isBboxValid(faceBbox) || !annotatedSelfieRef.current) {
       setFaceLayout(null);
+      setAnnotations(null);
       return;
     }
-    setFaceLayout(computeFaceLayout(faceBbox, annotatedSelfieRef.current));
+    const photoEl = annotatedSelfieRef.current;
+    const layout = computeFaceLayout(faceBbox, photoEl);
+    setFaceLayout(layout);
+    setAnnotations(diagnostic?.zones ? computeAnnotations(layout, diagnostic.zones, photoEl) : null);
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [faceBbox, diagnostic]);
 
@@ -638,17 +718,17 @@ export default function Home() {
   }
 
   async function handleSelfieSelected(file: File | null) {
-    if (!file) { setSelfie(null); setPreviewUrl(null); setFaceBbox(null); setFaceLayout(null); return; }
+    if (!file) { setSelfie(null); setPreviewUrl(null); setFaceBbox(null); setFaceLayout(null); setAnnotations(null); return; }
     const qualityWarning = await getImageQualityWarning(file);
     if (qualityWarning) {
-      setSelfie(null); setPreviewUrl(null); setFaceBbox(null); setFaceLayout(null);
+      setSelfie(null); setPreviewUrl(null); setFaceBbox(null); setFaceLayout(null); setAnnotations(null);
       setError(qualityWarning);
       setScanModalOpen(false);
       return;
     }
     setScanModalOpen(false);
     setError(null); setDiagnostic(null); clearPaidState();
-    setFaceBbox(null); setFaceLayout(null);
+    setFaceBbox(null); setFaceLayout(null); setAnnotations(null);
     window.localStorage.removeItem(DIAGNOSTIC_STORAGE_KEY);
     setSelfie(file);
     const reader = new FileReader();
@@ -1198,70 +1278,58 @@ export default function Home() {
                     {/* ── 1. PHOTO ANNOTÉE ── */}
                     {previewUrl && faceBbox && isBboxValid(faceBbox) ? (
                       <div className="debrief-photo-wrap">
-                        <div className="annotated-selfie" ref={annotatedSelfieRef}>
-                          <img
-                            src={previewUrl}
-                            alt="Ta peau analysée"
-                            className="annotated-selfie-img"
-                            style={faceLayout ? { objectPosition: faceLayout.objectPosition } : undefined}
-                          />
-                          {faceLayout && diagnostic.zones ? (
-                            <div className="callout-layer" aria-hidden="true">
-                              <div className="callout callout--right" style={faceLayout.callouts.forehead}>
-                                <span className="callout-dot" />
-                                <span className="callout-line" />
-                                <span className="callout-bubble">
-                                  <span className="callout-zone-name">Front</span>
-                                  <span>{calloutLabel(diagnostic.zones.forehead.concern)}</span>
-                                </span>
-                              </div>
-                              <div className="callout callout--left" style={faceLayout.callouts.t_zone}>
-                                <span className="callout-dot" />
-                                <span className="callout-line callout-line--sm" />
-                                <span className="callout-bubble">
-                                  <span className="callout-zone-name">Zone T</span>
-                                  <span>{calloutLabel(diagnostic.zones.t_zone.concern)}</span>
-                                </span>
-                              </div>
-                              <div className="callout callout--right" style={faceLayout.callouts.cheeks}>
-                                <span className="callout-dot" />
-                                <span className="callout-line callout-line--sm" />
-                                <span className="callout-bubble">
-                                  <span className="callout-zone-name">Joues</span>
-                                  <span>{calloutLabel(diagnostic.zones.cheeks.concern)}</span>
-                                </span>
-                              </div>
-                            </div>
-                          ) : null}
-                          {DEBUG_CALLOUTS && faceLayout ? (
-                            <div
-                              className="debug-bbox"
-                              style={{
-                                left: faceLayout.debugBbox.left,
-                                top: faceLayout.debugBbox.top,
-                                width: faceLayout.debugBbox.width,
-                                height: faceLayout.debugBbox.height,
-                              }}
+                        <div className="face-annot-wrap">
+                          {/* Photo */}
+                          <div className="annotated-selfie" ref={annotatedSelfieRef}>
+                            <img
+                              src={previewUrl}
+                              alt="Ta peau analysée"
+                              className="annotated-selfie-img"
+                              style={faceLayout ? { objectPosition: faceLayout.objectPosition } : undefined}
                             />
+                          </div>
+
+                          {/* SVG: dots + connecting lines */}
+                          {annotations ? (
+                            <svg className="annot-svg" aria-hidden="true">
+                              {annotations.map((a, i) => (
+                                <g key={i}>
+                                  <line
+                                    x1={a.dotX} y1={a.dotY}
+                                    x2={a.lineEndX} y2={a.labelY}
+                                    stroke="rgba(255,255,255,0.32)"
+                                    strokeWidth={0.75}
+                                  />
+                                  <circle cx={a.dotX} cy={a.dotY} r={2.5}
+                                    fill="rgba(255,255,255,0.92)"
+                                    style={{ filter: "drop-shadow(0 0 2px rgba(0,0,0,0.5))" }}
+                                  />
+                                </g>
+                              ))}
+                            </svg>
                           ) : null}
-                          {DEBUG_CALLOUTS ? (
-                            <div className="debug-label">
-                              {faceLayout
-                                ? `✓ face — img ${faceBbox.imgWidth}×${faceBbox.imgHeight} · bbox ${Math.round(faceBbox.originX)},${Math.round(faceBbox.originY)} ${Math.round(faceBbox.width)}×${Math.round(faceBbox.height)} · objPos ${faceLayout.objectPosition}`
-                                : "⏳ computing layout…"}
+
+                          {/* Labels in margins */}
+                          {annotations ? annotations.map((a, i) => (
+                            <div
+                              key={i}
+                              className={`annot-label annot-label--${a.side}`}
+                              style={{ top: a.labelY }}
+                              aria-hidden="true"
+                            >
+                              <span className="annot-label-zone">{a.zoneName}</span>
+                              <span className="annot-label-concern">{annotLabel(a.concern)}</span>
                             </div>
-                          ) : null}
+                          )) : null}
                         </div>
+
+                        {/* Mini-crops */}
                         {faceLayout && diagnostic.zones ? (
                           <div className="debrief-crops">
                             <div className="zone-crop">
                               <div className="zone-crop-frame">
-                                <img
-                                  src={previewUrl}
-                                  alt=""
-                                  className="zone-crop-img"
-                                  style={{ objectPosition: faceLayout.cropFront }}
-                                />
+                                <img src={previewUrl} alt="" className="zone-crop-img"
+                                  style={{ objectPosition: faceLayout.cropFront }} />
                               </div>
                               <div className="zone-crop-meta">
                                 <span className="zone-crop-name">Front</span>
@@ -1270,12 +1338,8 @@ export default function Home() {
                             </div>
                             <div className="zone-crop">
                               <div className="zone-crop-frame">
-                                <img
-                                  src={previewUrl}
-                                  alt=""
-                                  className="zone-crop-img"
-                                  style={{ objectPosition: faceLayout.cropTzone }}
-                                />
+                                <img src={previewUrl} alt="" className="zone-crop-img"
+                                  style={{ objectPosition: faceLayout.cropTzone }} />
                               </div>
                               <div className="zone-crop-meta">
                                 <span className="zone-crop-name">Zone T</span>

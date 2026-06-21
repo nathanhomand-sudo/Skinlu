@@ -2999,86 +2999,72 @@ h1 span { color: var(--accent); }
   /* object-position set dynamically via inline style from faceBbox */
 }
 
-.callout-layer {
+/* ── Annotation system: dots + margin labels ─────────────────── */
+.face-annot-wrap {
+  position: relative;
+  padding: 0 60px;
+}
+
+/* SVG covers entire wrapper (photo + both margins) */
+.annot-svg {
   position: absolute;
-  inset: 0;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
   pointer-events: none;
-  z-index: 2;
+  overflow: visible;
+  z-index: 5;
 }
 
-.callout {
+/* Labels positioned in left/right padding columns */
+.annot-label {
   position: absolute;
-  display: flex;
-  align-items: center;
+  pointer-events: none;
   transform: translateY(-50%);
-}
-
-/* Left: label ← line ← dot (dot stays at declared left%) */
-.callout--left {
-  flex-direction: row-reverse;
-  transform: translate(-100%, -50%);
-}
-
-/* Right: dot → line → label */
-.callout--right {
-  flex-direction: row;
-  transform: translateY(-50%);
-}
-
-.callout-dot {
-  width: 4px;
-  height: 4px;
-  border-radius: 50%;
-  background: rgba(255,255,255,0.9);
-  flex-shrink: 0;
-  box-shadow: 0 0 0 2px rgba(255,255,255,0.14), 0 1px 3px rgba(0,0,0,0.5);
-}
-
-.callout-line {
-  width: 16px;
-  height: 1px;
-  background: rgba(255,255,255,0.28);
-  flex-shrink: 0;
-}
-.callout-line--sm { width: 10px; }
-
-.callout-bubble {
   display: flex;
   flex-direction: column;
-  gap: 0;
-  background: rgba(6,6,6,0.64);
-  backdrop-filter: blur(14px) saturate(1.1);
-  -webkit-backdrop-filter: blur(14px) saturate(1.1);
-  border: 0.5px solid rgba(255,255,255,0.09);
-  border-radius: 14px;
-  padding: 2px 7px 3px;
+  gap: 1px;
+  z-index: 6;
 }
 
-.callout-zone-name {
-  font-size: 0.44rem;
+.annot-label--left {
+  left: 0;
+  width: 56px;
+  text-align: right;
+  padding-right: 4px;
+}
+
+.annot-label--right {
+  right: 0;
+  width: 56px;
+  text-align: left;
+  padding-left: 4px;
+}
+
+.annot-label-zone {
+  font-size: 0.41rem;
   font-weight: 700;
   text-transform: uppercase;
   letter-spacing: 0.08em;
-  color: rgba(255,255,255,0.38);
+  color: rgba(255,255,255,0.45);
   line-height: 1.1;
 }
 
-.callout-bubble span:last-child {
-  font-size: 0.61rem;
-  font-weight: 500;
-  color: rgba(255,255,255,0.88);
-  white-space: nowrap;
-  line-height: 1.2;
+.annot-label-concern {
+  font-size: 0.62rem;
+  font-weight: 600;
+  color: rgba(255,255,255,0.92);
+  line-height: 1.25;
+  word-break: break-word;
 }
 
 @media (max-width: 479px) {
-  .callout--mobile-hide { display: none; }
   .annotated-selfie { height: 260px; }
-  .callout-line { width: 10px; }
-  .callout-line--sm { width: 7px; }
-  .callout-bubble { padding: 1px 6px 2px; }
-  .callout-bubble span:last-child { font-size: 0.57rem; }
-  .callout-zone-name { font-size: 0.41rem; }
+  .face-annot-wrap { padding: 0 52px; }
+  .annot-label--left { width: 48px; }
+  .annot-label--right { width: 48px; }
+  .annot-label-concern { font-size: 0.58rem; }
 }
 
 /* ── Mini crops ──────────────────────────────────────────────── */
