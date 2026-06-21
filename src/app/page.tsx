@@ -26,6 +26,11 @@ const MAX_FILE_SIZE = 4 * 1024 * 1024;
 const ANALYSIS_TIMEOUT_MS = 70_000;
 const DIAGNOSTIC_STORAGE_KEY = "skinlu:last-diagnostic";
 
+const MP_WASM_URL =
+  "https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@0.10.35/wasm";
+const MP_MODEL_URL =
+  "https://storage.googleapis.com/mediapipe-models/face_detector/blaze_face_short_range/float16/latest/blaze_face_short_range.tflite";
+
 const CONCERN_LABELS: Record<Concern, string> = {
   acne: "Imperfections",
   dehydration: "Déshydratation possible",
@@ -81,6 +86,22 @@ const LOADING_STEPS = [
   "Lecture des signaux cutanés",
   "Création de ton profil peau",
 ];
+
+type FaceBbox = {
+  originX: number;
+  originY: number;
+  width: number;
+  height: number;
+  imgWidth: number;
+  imgHeight: number;
+};
+
+type CalloutPositions = {
+  forehead: { top: string; left: string };
+  cheeks:   { top: string; left: string };
+  t_zone:   { top: string; left: string };
+  texture:  { top: string; left: string };
+};
 
 type DiagnosticZone = {
   observation: string;
@@ -171,6 +192,36 @@ function calloutLabel(concern: Concern | null): string {
 function shortSummary(summary: string) {
   const firstSentence = summary.split(/(?<=[.!?])\s+/)[0]?.trim() ?? summary;
   return firstSentence.length > 100 ? `${firstSentence.slice(0, 97).trim()}…` : firstSentence;
+}
+
+function computeCalloutPositions(
+  bbox: FaceBbox,
+  container: HTMLDivElement,
+): CalloutPositions {
+  const { originX, originY, width, height, imgWidth, imgHeight } = bbox;
+  const contW = container.offsetWidth;
+  const contH = container.offsetHeight;
+
+  // object-fit: cover → scale to fill whichever dimension overflows
+  const scale = Math.max(contW / imgWidth, contH / imgHeight);
+  const overflowX = Math.max(0, imgWidth * scale - contW);
+  const overflowY = Math.max(0, imgHeight * scale - contH);
+  // object-position: center 30%
+  const hiddenLeft = overflowX * 0.50;
+  const hiddenTop  = overflowY * 0.30;
+
+  const clamp = (v: number) => Math.max(4, Math.min(94, v));
+  const pos = (ix: number, iy: number) => ({
+    left: `${clamp((ix * scale - hiddenLeft) / contW * 100).toFixed(1)}%`,
+    top:  `${clamp((iy * scale - hiddenTop)  / contH * 100).toFixed(1)}%`,
+  });
+
+  return {
+    forehead: pos(originX + width * 0.50, originY + height * 0.16),
+    cheeks:   pos(originX + width * 0.72, originY + height * 0.48),
+    t_zone:   pos(originX + width * 0.48, originY + height * 0.60),
+    texture:  pos(originX + width * 0.52, originY + height * 0.76),
+  };
 }
 
 async function getImageQualityWarning(file: File) {
@@ -339,8 +390,12 @@ function UrgencyCounter() {
 export default function Home() {
   const scanEntryTracked = useRef(false);
   const scanCabinRef = useRef<SkinScanCabinHandle>(null);
+  const annotatedSelfieRef = useRef<HTMLDivElement>(null);
+  const imageDetectorRef = useRef<import("@mediapipe/tasks-vision").FaceDetector | null>(null);
   const [selfie, setSelfie] = useState<File | null>(null);
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
+  const [faceBbox, setFaceBbox] = useState<FaceBbox | null>(null);
+  const [calloutPositions, setCalloutPositions] = useState<CalloutPositions | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [skinProfile, setSkinProfile] = useState<SkinProfileAnswers>({});
   const [loading, setLoading] = useState(false);
@@ -354,6 +409,15 @@ export default function Home() {
   const [user, setUser] = useState<User | null>(null);
   const [scanModalOpen, setScanModalOpen] = useState(false);
   const [signUpModalOpen, setSignUpModalOpen] = useState(false);
+
+  // Cleanup IMAGE-mode detector on unmount
+  useEffect(() => () => { imageDetectorRef.current?.close(); }, []);
+
+  // Recompute callout positions whenever the bbox or container updates
+  useEffect(() => {
+    if (!faceBbox || !annotatedSelfieRef.current) { setCalloutPositions(null); return; }
+    setCalloutPositions(computeCalloutPositions(faceBbox, annotatedSelfieRef.current));
+  }, [faceBbox]);
 
   useEffect(() => { track("landing_view"); }, []);
 
@@ -440,21 +504,60 @@ export default function Home() {
     setSkinProfile((current) => ({ ...current, [key]: value }));
   }
 
+  async function detectFaceInImage(dataUrl: string) {
+    try {
+      if (!imageDetectorRef.current) {
+        const { FaceDetector, FilesetResolver } = await import("@mediapipe/tasks-vision");
+        const vision = await FilesetResolver.forVisionTasks(MP_WASM_URL);
+        imageDetectorRef.current = await FaceDetector.createFromOptions(vision, {
+          baseOptions: { modelAssetPath: MP_MODEL_URL },
+          runningMode: "IMAGE",
+          minDetectionConfidence: 0.45,
+        });
+      }
+      const img = await new Promise<HTMLImageElement>((resolve, reject) => {
+        const el = new Image();
+        el.onload = () => resolve(el);
+        el.onerror = reject;
+        el.src = dataUrl;
+      });
+      const result = imageDetectorRef.current.detect(img);
+      const box = result.detections[0]?.boundingBox;
+      if (box) {
+        setFaceBbox({
+          originX: box.originX,
+          originY: box.originY,
+          width: box.width,
+          height: box.height,
+          imgWidth: img.naturalWidth,
+          imgHeight: img.naturalHeight,
+        });
+      }
+    } catch {
+      // Detection failed silently — callouts keep their fixed fallback positions
+    }
+  }
+
   async function handleSelfieSelected(file: File | null) {
-    if (!file) { setSelfie(null); setPreviewUrl(null); return; }
+    if (!file) { setSelfie(null); setPreviewUrl(null); setFaceBbox(null); return; }
     const qualityWarning = await getImageQualityWarning(file);
     if (qualityWarning) {
-      setSelfie(null); setPreviewUrl(null);
+      setSelfie(null); setPreviewUrl(null); setFaceBbox(null);
       setError(qualityWarning);
       setScanModalOpen(false);
       return;
     }
     setScanModalOpen(false);
     setError(null); setDiagnostic(null); clearPaidState();
+    setFaceBbox(null);
     window.localStorage.removeItem(DIAGNOSTIC_STORAGE_KEY);
     setSelfie(file);
     const reader = new FileReader();
-    reader.onload = (e) => setPreviewUrl(e.target?.result as string ?? null);
+    reader.onload = (e) => {
+      const url = e.target?.result as string ?? null;
+      setPreviewUrl(url);
+      if (url) void detectFaceInImage(url);
+    };
     reader.readAsDataURL(file);
     void runAnalysis(file);
   }
@@ -996,7 +1099,7 @@ export default function Home() {
                     {/* ── 1. PHOTO ANNOTÉE ─────────────────────────── */}
                     {previewUrl ? (
                       <div className="debrief-photo-wrap">
-                        <div className="annotated-selfie">
+                        <div className="annotated-selfie" ref={annotatedSelfieRef}>
                           <img
                             src={previewUrl}
                             alt="Ta peau analysée"
@@ -1004,8 +1107,8 @@ export default function Home() {
                           />
                           {diagnostic.zones ? (
                             <div className="callout-layer" aria-hidden="true">
-                              {/* Left callouts */}
-                              <div className="callout callout--left" style={{ top: "18%", left: "50%" }}>
+                              {/* Left callouts — positions réelles via bbox, fallback fixe */}
+                              <div className="callout callout--left" style={calloutPositions?.forehead ?? { top: "18%", left: "50%" }}>
                                 <span className="callout-dot" />
                                 <span className="callout-line" />
                                 <span className="callout-bubble">
@@ -1013,7 +1116,7 @@ export default function Home() {
                                   <span>{calloutLabel(diagnostic.zones.forehead.concern)}</span>
                                 </span>
                               </div>
-                              <div className="callout callout--left" style={{ top: "60%", left: "46%" }}>
+                              <div className="callout callout--left" style={calloutPositions?.t_zone ?? { top: "60%", left: "46%" }}>
                                 <span className="callout-dot" />
                                 <span className="callout-line callout-line--sm" />
                                 <span className="callout-bubble">
@@ -1021,8 +1124,8 @@ export default function Home() {
                                   <span>{calloutLabel(diagnostic.zones.t_zone.concern)}</span>
                                 </span>
                               </div>
-                              {/* Right callouts — repositionnés pour rester dans les bounds */}
-                              <div className="callout callout--right" style={{ top: "40%", left: "62%" }}>
+                              {/* Right callouts */}
+                              <div className="callout callout--right" style={calloutPositions?.cheeks ?? { top: "40%", left: "62%" }}>
                                 <span className="callout-dot" />
                                 <span className="callout-line callout-line--sm" />
                                 <span className="callout-bubble">
@@ -1030,7 +1133,7 @@ export default function Home() {
                                   <span>{calloutLabel(diagnostic.zones.cheeks.concern)}</span>
                                 </span>
                               </div>
-                              <div className="callout callout--right callout--mobile-hide" style={{ top: "74%", left: "50%" }}>
+                              <div className="callout callout--right callout--mobile-hide" style={calloutPositions?.texture ?? { top: "74%", left: "50%" }}>
                                 <span className="callout-dot" />
                                 <span className="callout-line" />
                                 <span className="callout-bubble">
