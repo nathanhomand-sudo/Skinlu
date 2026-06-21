@@ -169,9 +169,8 @@ function calloutLabel(concern: Concern | null): string {
 }
 
 function shortSummary(summary: string) {
-  const firstSentence = summary.split(/(?<=[.!?])\s+/)[0]?.trim();
-  const text = firstSentence || summary;
-  return text.length > 150 ? `${text.slice(0, 147).trim()}...` : text;
+  const firstSentence = summary.split(/(?<=[.!?])\s+/)[0]?.trim() ?? summary;
+  return firstSentence.length > 100 ? `${firstSentence.slice(0, 97).trim()}…` : firstSentence;
 }
 
 async function getImageQualityWarning(file: File) {
@@ -1022,8 +1021,8 @@ export default function Home() {
                                   <span>{calloutLabel(diagnostic.zones.t_zone.concern)}</span>
                                 </span>
                               </div>
-                              {/* Right callouts */}
-                              <div className="callout callout--right" style={{ top: "40%", left: "68%" }}>
+                              {/* Right callouts — repositionnés pour rester dans les bounds */}
+                              <div className="callout callout--right" style={{ top: "40%", left: "62%" }}>
                                 <span className="callout-dot" />
                                 <span className="callout-line callout-line--sm" />
                                 <span className="callout-bubble">
@@ -1031,7 +1030,7 @@ export default function Home() {
                                   <span>{calloutLabel(diagnostic.zones.cheeks.concern)}</span>
                                 </span>
                               </div>
-                              <div className="callout callout--right callout--mobile-hide" style={{ top: "74%", left: "54%" }}>
+                              <div className="callout callout--right callout--mobile-hide" style={{ top: "74%", left: "50%" }}>
                                 <span className="callout-dot" />
                                 <span className="callout-line" />
                                 <span className="callout-bubble">
@@ -1042,12 +1041,12 @@ export default function Home() {
                             </div>
                           ) : null}
                         </div>
-                        {/* Mini crops */}
+                        {/* Mini crops — zoom CSS via transform: scale + transform-origin */}
                         {diagnostic.zones ? (
                           <div className="debrief-crops">
                             <div className="zone-crop">
-                              <div className="zone-crop-frame">
-                                <img src={previewUrl} alt="" className="zone-crop-img" style={{ objectPosition: "center top" }} />
+                              <div className="zone-crop-frame zone-crop-frame--front">
+                                <img src={previewUrl} alt="" className="zone-crop-img" />
                               </div>
                               <div className="zone-crop-meta">
                                 <span className="zone-crop-name">Front</span>
@@ -1055,8 +1054,8 @@ export default function Home() {
                               </div>
                             </div>
                             <div className="zone-crop">
-                              <div className="zone-crop-frame">
-                                <img src={previewUrl} alt="" className="zone-crop-img" style={{ objectPosition: "center 70%" }} />
+                              <div className="zone-crop-frame zone-crop-frame--tzone">
+                                <img src={previewUrl} alt="" className="zone-crop-img" />
                               </div>
                               <div className="zone-crop-meta">
                                 <span className="zone-crop-name">Zone T</span>
