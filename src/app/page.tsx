@@ -111,6 +111,14 @@ type DebugBboxStyle = {
   height: string;
 };
 
+type FaceLayout = {
+  objectPosition: string;
+  callouts: CalloutPositions;
+  debugBbox: DebugBboxStyle;
+  cropFront: string;
+  cropTzone: string;
+};
+
 type DiagnosticZone = {
   observation: string;
   concern: Concern | null;
@@ -202,29 +210,40 @@ function shortSummary(summary: string) {
   return firstSentence.length > 100 ? `${firstSentence.slice(0, 97).trim()}…` : firstSentence;
 }
 
-function computeCalloutPositions(
-  bbox: FaceBbox,
-  container: HTMLDivElement,
-): CalloutPositions {
+function isBboxValid(bbox: FaceBbox): boolean {
+  if (bbox.width / bbox.imgWidth < 0.08 || bbox.height / bbox.imgHeight < 0.08) return false;
+  if (bbox.originX < -10 || bbox.originY < -10) return false;
+  if (bbox.originX + bbox.width > bbox.imgWidth + 10) return false;
+  if (bbox.originY + bbox.height > bbox.imgHeight + 10) return false;
+  return true;
+}
+
+function computeFaceLayout(bbox: FaceBbox, container: HTMLDivElement): FaceLayout {
   const { originX, originY, width, height, imgWidth, imgHeight } = bbox;
+  const cx = originX + width / 2;
+  const cy = originY + height / 2;
   const contW = container.offsetWidth;
   const contH = container.offsetHeight;
-
   const scale = Math.max(contW / imgWidth, contH / imgHeight);
   const overflowX = Math.max(0, imgWidth * scale - contW);
   const overflowY = Math.max(0, imgHeight * scale - contH);
-  const hiddenLeft = overflowX * 0.50;
-  const hiddenTop  = overflowY * 0.30;
+
+  // Center the crop on the face
+  const hiddenLeft = Math.max(0, Math.min(overflowX, cx * scale - contW / 2));
+  const hiddenTop  = Math.max(0, Math.min(overflowY, cy * scale - contH / 2));
+  const pctX = overflowX > 0 ? hiddenLeft / overflowX * 100 : 50;
+  const pctY = overflowY > 0 ? hiddenTop  / overflowY * 100 : 50;
+  const objectPosition = `${pctX.toFixed(1)}% ${pctY.toFixed(1)}%`;
 
   if (DEBUG_CALLOUTS) {
-    console.log("[Skinlu Debug] computeCalloutPositions", {
+    console.log("[Skinlu Debug] computeFaceLayout", {
       img: `${imgWidth}×${imgHeight}`,
       container: `${contW}×${contH}`,
+      faceCenter: `cx=${cx.toFixed(0)}, cy=${cy.toFixed(0)}`,
       scale: scale.toFixed(4),
-      overflowX: overflowX.toFixed(1),
-      overflowY: overflowY.toFixed(1),
       hiddenLeft: hiddenLeft.toFixed(1),
       hiddenTop: hiddenTop.toFixed(1),
+      objectPosition,
     });
   }
 
@@ -234,32 +253,28 @@ function computeCalloutPositions(
     top:  `${clamp((iy * scale - hiddenTop)  / contH * 100).toFixed(1)}%`,
   });
 
-  const positions = {
+  const callouts: CalloutPositions = {
     forehead: pos(originX + width * 0.50, originY + height * 0.16),
     cheeks:   pos(originX + width * 0.72, originY + height * 0.48),
     t_zone:   pos(originX + width * 0.48, originY + height * 0.60),
     texture:  pos(originX + width * 0.52, originY + height * 0.76),
   };
 
-  if (DEBUG_CALLOUTS) console.log("[Skinlu Debug] callout positions", positions);
-  return positions;
-}
+  if (DEBUG_CALLOUTS) console.log("[Skinlu Debug] callout positions", callouts);
 
-function computeDebugBbox(bbox: FaceBbox, container: HTMLDivElement): DebugBboxStyle {
-  const { originX, originY, width, height, imgWidth, imgHeight } = bbox;
-  const contW = container.offsetWidth;
-  const contH = container.offsetHeight;
-  const scale = Math.max(contW / imgWidth, contH / imgHeight);
-  const overflowX = Math.max(0, imgWidth * scale - contW);
-  const overflowY = Math.max(0, imgHeight * scale - contH);
-  const hiddenLeft = overflowX * 0.50;
-  const hiddenTop  = overflowY * 0.30;
-  return {
+  const debugBbox: DebugBboxStyle = {
     left:   `${((originX * scale - hiddenLeft) / contW * 100).toFixed(1)}%`,
     top:    `${((originY * scale - hiddenTop)  / contH * 100).toFixed(1)}%`,
     width:  `${(width * scale / contW * 100).toFixed(1)}%`,
     height: `${(height * scale / contH * 100).toFixed(1)}%`,
   };
+
+  // Mini-crop object-position: center on the face zone within that crop container
+  const cxPct = (cx / imgWidth * 100).toFixed(1);
+  const cropFront = `${cxPct}% ${((originY + height * 0.16) / imgHeight * 100).toFixed(1)}%`;
+  const cropTzone = `${cxPct}% ${((originY + height * 0.60) / imgHeight * 100).toFixed(1)}%`;
+
+  return { objectPosition, callouts, debugBbox, cropFront, cropTzone };
 }
 
 async function getImageQualityWarning(file: File) {
@@ -433,8 +448,7 @@ export default function Home() {
   const [selfie, setSelfie] = useState<File | null>(null);
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
   const [faceBbox, setFaceBbox] = useState<FaceBbox | null>(null);
-  const [calloutPositions, setCalloutPositions] = useState<CalloutPositions | null>(null);
-  const [debugBbox, setDebugBbox] = useState<DebugBboxStyle | null>(null);
+  const [faceLayout, setFaceLayout] = useState<FaceLayout | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [skinProfile, setSkinProfile] = useState<SkinProfileAnswers>({});
   const [loading, setLoading] = useState(false);
@@ -452,17 +466,15 @@ export default function Home() {
   // Cleanup IMAGE-mode detector on unmount
   useEffect(() => () => { imageDetectorRef.current?.close(); }, []);
 
-  // Recompute callout positions whenever the bbox or container updates
+  // Recompute face layout whenever bbox or debrief mounts (diagnostic triggers the container to appear)
   useEffect(() => {
-    if (!faceBbox || !annotatedSelfieRef.current) {
-      setCalloutPositions(null);
-      setDebugBbox(null);
+    if (!faceBbox || !isBboxValid(faceBbox) || !annotatedSelfieRef.current) {
+      setFaceLayout(null);
       return;
     }
-    const container = annotatedSelfieRef.current;
-    setCalloutPositions(computeCalloutPositions(faceBbox, container));
-    if (DEBUG_CALLOUTS) setDebugBbox(computeDebugBbox(faceBbox, container));
-  }, [faceBbox]);
+    setFaceLayout(computeFaceLayout(faceBbox, annotatedSelfieRef.current));
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [faceBbox, diagnostic]);
 
   useEffect(() => { track("landing_view"); }, []);
 
@@ -616,17 +628,17 @@ export default function Home() {
   }
 
   async function handleSelfieSelected(file: File | null) {
-    if (!file) { setSelfie(null); setPreviewUrl(null); setFaceBbox(null); return; }
+    if (!file) { setSelfie(null); setPreviewUrl(null); setFaceBbox(null); setFaceLayout(null); return; }
     const qualityWarning = await getImageQualityWarning(file);
     if (qualityWarning) {
-      setSelfie(null); setPreviewUrl(null); setFaceBbox(null);
+      setSelfie(null); setPreviewUrl(null); setFaceBbox(null); setFaceLayout(null);
       setError(qualityWarning);
       setScanModalOpen(false);
       return;
     }
     setScanModalOpen(false);
     setError(null); setDiagnostic(null); clearPaidState();
-    setFaceBbox(null);
+    setFaceBbox(null); setFaceLayout(null);
     window.localStorage.removeItem(DIAGNOSTIC_STORAGE_KEY);
     setSelfie(file);
     const reader = new FileReader();
@@ -1174,17 +1186,18 @@ export default function Home() {
                   <div className="result-panel" role="status" aria-live="polite">
 
                     {/* ── 1. PHOTO ANNOTÉE ── */}
-                    {previewUrl ? (
+                    {previewUrl && faceBbox && isBboxValid(faceBbox) ? (
                       <div className="debrief-photo-wrap">
                         <div className="annotated-selfie" ref={annotatedSelfieRef}>
                           <img
                             src={previewUrl}
                             alt="Ta peau analysée"
                             className="annotated-selfie-img"
+                            style={faceLayout ? { objectPosition: faceLayout.objectPosition } : undefined}
                           />
-                          {calloutPositions && diagnostic.zones ? (
+                          {faceLayout && diagnostic.zones ? (
                             <div className="callout-layer" aria-hidden="true">
-                              <div className="callout callout--left" style={calloutPositions.forehead}>
+                              <div className="callout callout--left" style={faceLayout.callouts.forehead}>
                                 <span className="callout-dot" />
                                 <span className="callout-line" />
                                 <span className="callout-bubble">
@@ -1192,7 +1205,7 @@ export default function Home() {
                                   <span>{calloutLabel(diagnostic.zones.forehead.concern)}</span>
                                 </span>
                               </div>
-                              <div className="callout callout--left" style={calloutPositions.t_zone}>
+                              <div className="callout callout--left" style={faceLayout.callouts.t_zone}>
                                 <span className="callout-dot" />
                                 <span className="callout-line callout-line--sm" />
                                 <span className="callout-bubble">
@@ -1200,7 +1213,7 @@ export default function Home() {
                                   <span>{calloutLabel(diagnostic.zones.t_zone.concern)}</span>
                                 </span>
                               </div>
-                              <div className="callout callout--right" style={calloutPositions.cheeks}>
+                              <div className="callout callout--right" style={faceLayout.callouts.cheeks}>
                                 <span className="callout-dot" />
                                 <span className="callout-line callout-line--sm" />
                                 <span className="callout-bubble">
@@ -1208,7 +1221,7 @@ export default function Home() {
                                   <span>{calloutLabel(diagnostic.zones.cheeks.concern)}</span>
                                 </span>
                               </div>
-                              <div className="callout callout--right callout--mobile-hide" style={calloutPositions.texture}>
+                              <div className="callout callout--right callout--mobile-hide" style={faceLayout.callouts.texture}>
                                 <span className="callout-dot" />
                                 <span className="callout-line" />
                                 <span className="callout-bubble">
@@ -1218,30 +1231,35 @@ export default function Home() {
                               </div>
                             </div>
                           ) : null}
-                          {DEBUG_CALLOUTS && debugBbox ? (
+                          {DEBUG_CALLOUTS && faceLayout ? (
                             <div
                               className="debug-bbox"
                               style={{
-                                left: debugBbox.left,
-                                top: debugBbox.top,
-                                width: debugBbox.width,
-                                height: debugBbox.height,
+                                left: faceLayout.debugBbox.left,
+                                top: faceLayout.debugBbox.top,
+                                width: faceLayout.debugBbox.width,
+                                height: faceLayout.debugBbox.height,
                               }}
                             />
                           ) : null}
                           {DEBUG_CALLOUTS ? (
                             <div className="debug-label">
-                              {faceBbox
-                                ? `✓ face — img ${faceBbox.imgWidth}×${faceBbox.imgHeight} · bbox ${Math.round(faceBbox.originX)},${Math.round(faceBbox.originY)} ${Math.round(faceBbox.width)}×${Math.round(faceBbox.height)}`
-                                : "✗ no face detected"}
+                              {faceLayout
+                                ? `✓ face — img ${faceBbox.imgWidth}×${faceBbox.imgHeight} · bbox ${Math.round(faceBbox.originX)},${Math.round(faceBbox.originY)} ${Math.round(faceBbox.width)}×${Math.round(faceBbox.height)} · objPos ${faceLayout.objectPosition}`
+                                : "⏳ computing layout…"}
                             </div>
                           ) : null}
                         </div>
-                        {calloutPositions && diagnostic.zones ? (
+                        {faceLayout && diagnostic.zones ? (
                           <div className="debrief-crops">
                             <div className="zone-crop">
-                              <div className="zone-crop-frame zone-crop-frame--front">
-                                <img src={previewUrl} alt="" className="zone-crop-img" />
+                              <div className="zone-crop-frame">
+                                <img
+                                  src={previewUrl}
+                                  alt=""
+                                  className="zone-crop-img"
+                                  style={{ objectPosition: faceLayout.cropFront }}
+                                />
                               </div>
                               <div className="zone-crop-meta">
                                 <span className="zone-crop-name">Front</span>
@@ -1249,8 +1267,13 @@ export default function Home() {
                               </div>
                             </div>
                             <div className="zone-crop">
-                              <div className="zone-crop-frame zone-crop-frame--tzone">
-                                <img src={previewUrl} alt="" className="zone-crop-img" />
+                              <div className="zone-crop-frame">
+                                <img
+                                  src={previewUrl}
+                                  alt=""
+                                  className="zone-crop-img"
+                                  style={{ objectPosition: faceLayout.cropTzone }}
+                                />
                               </div>
                               <div className="zone-crop-meta">
                                 <span className="zone-crop-name">Zone T</span>
@@ -1259,10 +1282,9 @@ export default function Home() {
                             </div>
                           </div>
                         ) : null}
-                        {!calloutPositions ? (
-                          <p className="debrief-no-bbox">Photo difficile à recadrer automatiquement.</p>
-                        ) : null}
                       </div>
+                    ) : previewUrl ? (
+                      <p className="debrief-no-bbox">Photo difficile à recadrer automatiquement.</p>
                     ) : null}
 
                     {/* ── 2. SUMMARY ───────────────────────────────── */}

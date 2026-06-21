@@ -2996,7 +2996,7 @@ h1 span { color: var(--accent); }
   height: 100%;
   display: block;
   object-fit: cover;
-  object-position: center 30%;
+  /* object-position set dynamically via inline style from faceBbox */
 }
 
 .callout-layer {
@@ -3107,18 +3107,9 @@ h1 span { color: var(--accent); }
   height: 100%;
   object-fit: cover;
   display: block;
-}
-
-/* Front: zoom sur la partie haute du visage (front / sourcils) */
-.zone-crop-frame--front .zone-crop-img {
+  /* object-position set dynamically; transform zooms in on that point */
   transform: scale(2.4);
-  transform-origin: center 12%;
-}
-
-/* Zone T: zoom sur le nez / centre du visage */
-.zone-crop-frame--tzone .zone-crop-img {
-  transform: scale(2.6);
-  transform-origin: center 62%;
+  transform-origin: center center;
 }
 
 .zone-crop-meta {
