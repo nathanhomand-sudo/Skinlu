@@ -1,8 +1,10 @@
 "use client";
 
+import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { CinematicScene } from "@/components/landing/CinematicScene";
 import { Reviews } from "@/components/landing/Reviews";
+import { isOnboarded, resetOnboarded } from "@/lib/onboarding";
 
 // Landing /v2 — cinématique en intro (le mec scrolle, clique → biais
 // d'investissement dès la 1re seconde), puis "comment ça marche" + avis.
@@ -17,6 +19,25 @@ const STEPS = [
 export default function LandingV2Page() {
   const router = useRouter();
   const scan = () => router.push("/v2/scan");
+  const [ready, setReady] = useState(false);
+
+  // Returning user (déjà onboardé) → on saute la cinématique et on va
+  // direct au scan. ?reset=1 réinitialise (pratique pour tester).
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    if (params.get("reset") === "1") {
+      resetOnboarded();
+      setReady(true);
+      return;
+    }
+    if (isOnboarded()) {
+      router.replace("/v2/scan");
+      return;
+    }
+    setReady(true);
+  }, [router]);
+
+  if (!ready) return null;
 
   return (
     <>

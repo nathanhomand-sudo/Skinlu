@@ -22,114 +22,6 @@ const useIsoLayoutEffect = typeof window !== "undefined" ? useLayoutEffect : use
    (glass, profondeur, mouse-lighting) repris tels quels. Composant
    propre à /v2 — n'affecte ni Hero.tsx ni la page d'accueil. */
 
-const STYLES = `
-  .cs-reveal { visibility: hidden; }
-
-  .cs-grain {
-    position: absolute; inset: 0; pointer-events: none; z-index: 50;
-    opacity: 0.045; mix-blend-mode: overlay;
-    background: url('data:image/svg+xml;utf8,<svg viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg"><filter id="n"><feTurbulence type="fractalNoise" baseFrequency="0.8" numOctaves="3" stitchTiles="stitch"/></filter><rect width="100%" height="100%" filter="url(%23n)"/></svg>');
-  }
-
-  .cs-grid {
-    background-size: 60px 60px;
-    background-image:
-      linear-gradient(to right, rgba(255,255,255,0.05) 1px, transparent 1px),
-      linear-gradient(to bottom, rgba(255,255,255,0.05) 1px, transparent 1px);
-    mask-image: radial-gradient(ellipse at center, black 0%, transparent 70%);
-    -webkit-mask-image: radial-gradient(ellipse at center, black 0%, transparent 70%);
-  }
-
-  .cs-glow {
-    background: radial-gradient(closest-side, rgba(15,107,95,0.30), transparent);
-  }
-
-  /* Typo argentée (hors carte, fond sombre) */
-  .cs-silver {
-    background: linear-gradient(180deg, #FFFFFF 0%, rgba(255,255,255,0.42) 100%);
-    -webkit-background-clip: text; background-clip: text;
-    -webkit-text-fill-color: transparent; transform: translateZ(0);
-    filter: drop-shadow(0 10px 22px rgba(0,0,0,0.5)) drop-shadow(0 2px 4px rgba(0,0,0,0.4));
-  }
-  .cs-silver-card {
-    background: linear-gradient(180deg, #FFFFFF 0%, #9FB7B0 100%);
-    -webkit-background-clip: text; background-clip: text;
-    -webkit-text-fill-color: transparent; transform: translateZ(0);
-    filter: drop-shadow(0 12px 24px rgba(0,0,0,0.8)) drop-shadow(0 4px 8px rgba(0,0,0,0.6));
-  }
-
-  /* Carte physique profonde, teal Skinlu + mouse-lighting */
-  .cs-card {
-    background: linear-gradient(150deg, #103A34 0%, #08100E 100%);
-    box-shadow:
-      0 40px 100px -20px rgba(0,0,0,0.9),
-      0 20px 40px -20px rgba(0,0,0,0.8),
-      inset 0 1px 2px rgba(255,255,255,0.14),
-      inset 0 -2px 4px rgba(0,0,0,0.8);
-    border: 1px solid rgba(255,255,255,0.04);
-  }
-  .cs-sheen {
-    position: absolute; inset: 0; border-radius: inherit; pointer-events: none; z-index: 5;
-    background: radial-gradient(700px circle at var(--mx,50%) var(--my,50%), rgba(94,234,212,0.07) 0%, transparent 42%);
-    mix-blend-mode: screen;
-  }
-
-  /* iPhone */
-  .cs-bezel {
-    background-color: #111;
-    box-shadow:
-      inset 0 0 0 2px #3f4a48, inset 0 0 0 7px #000,
-      0 40px 80px -15px rgba(0,0,0,0.9), 0 15px 25px -5px rgba(0,0,0,0.7);
-    transform-style: preserve-3d;
-  }
-  .cs-hwbtn {
-    background: linear-gradient(90deg, #404040 0%, #171717 100%);
-    box-shadow: -2px 0 5px rgba(0,0,0,0.8), inset -1px 0 1px rgba(255,255,255,0.15), inset 1px 0 2px rgba(0,0,0,0.8);
-  }
-  .cs-glare { background: linear-gradient(110deg, rgba(255,255,255,0.08) 0%, rgba(255,255,255,0) 45%); }
-
-  .cs-widget {
-    background: linear-gradient(180deg, rgba(255,255,255,0.05) 0%, rgba(255,255,255,0.015) 100%);
-    box-shadow: 0 10px 20px rgba(0,0,0,0.3), inset 0 1px 1px rgba(255,255,255,0.06), inset 0 -1px 1px rgba(0,0,0,0.5);
-    border: 1px solid rgba(255,255,255,0.04);
-  }
-  .cs-badge {
-    background: linear-gradient(135deg, rgba(255,255,255,0.09) 0%, rgba(255,255,255,0.015) 100%);
-    backdrop-filter: blur(24px); -webkit-backdrop-filter: blur(24px);
-    box-shadow: 0 0 0 1px rgba(255,255,255,0.10), 0 25px 50px -12px rgba(0,0,0,0.8), inset 0 1px 1px rgba(255,255,255,0.2), inset 0 -1px 1px rgba(0,0,0,0.5);
-  }
-
-  .cs-ring { transform: rotate(-90deg); transform-origin: center; stroke-dasharray: 326; stroke-dashoffset: 326; stroke-linecap: round; }
-
-  @keyframes cs-sweep { 0% { top: 8%; opacity: 0; } 15% { opacity: 1; } 85% { opacity: 1; } 100% { top: 78%; opacity: 0; } }
-  .cs-scanline { animation: cs-sweep 2.8s ease-in-out infinite; }
-  @keyframes cs-cue { 0%,100% { transform: translateY(0); opacity: .55; } 50% { transform: translateY(7px); opacity: 1; } }
-  .cs-cue-chevron { animation: cs-cue 1.8s ease-in-out infinite; }
-  @keyframes cs-cue-line { 0% { transform: translateY(-100%); } 100% { transform: translateY(320%); } }
-  .cs-cue-travel { animation: cs-cue-line 2s ease-in-out infinite; }
-  @keyframes cs-pin { 0% { box-shadow: 0 0 0 0 rgba(94,234,212,.5), 0 0 8px rgba(255,255,255,.9); } 70% { box-shadow: 0 0 0 9px rgba(94,234,212,0), 0 0 8px rgba(255,255,255,.9); } 100% { box-shadow: 0 0 0 0 rgba(94,234,212,0), 0 0 8px rgba(255,255,255,.9); } }
-  .cs-pindot { animation: cs-pin 2.2s ease-out infinite; }
-  @keyframes cs-cta-bounce {
-    0%,100% { transform: translateY(0); box-shadow: 0 6px 18px rgba(15,107,95,.5); }
-    50% { transform: translateY(-4px); box-shadow: 0 12px 26px rgba(27,174,154,.85); }
-  }
-  .cs-phone-cta { animation: cs-cta-bounce 1.4s ease-in-out infinite; }
-  .cs-phone-cta:active { transform: scale(0.97); }
-
-  /* Fallback statique (prefers-reduced-motion) — pile verticale lisible.
-     La carte garde une hauteur d'écran (ses enfants sont en position
-     absolue : height:auto l'effondrait → écran "vide / fond seul"). */
-  .cs-root.cs-reduced { height: auto !important; min-height: auto; overflow: visible; display: block; }
-  .cs-reduced .cs-reveal { visibility: visible !important; }
-  .cs-reduced .scroll-cue { display: none !important; }
-  .cs-reduced .hero-text-wrapper { position: relative !important; inset: auto !important; transform: none !important; opacity: 1 !important; min-height: 88vh; padding: 1rem; }
-  .cs-reduced .cta-wrapper { position: relative !important; inset: auto !important; transform: none !important; filter: none !important; opacity: 1 !important; min-height: 70vh; padding: 2rem 1rem; }
-  .cs-reduced .main-card { position: relative !important; inset: auto !important; transform: none !important; width: 100% !important; height: 100vh !important; border-radius: 0 !important; opacity: 1 !important; }
-
-  @media (prefers-reduced-motion: reduce) {
-    .cs-scanline, .cs-cue-chevron, .cs-cue-travel, .cs-pindot, .cs-phone-cta { animation: none; }
-  }
-`;
 
 type Props = { onScanClick: () => void; ctaLabel?: string };
 
@@ -244,7 +136,6 @@ export function CinematicScene({ onScanClick, ctaLabel = "Scanner ma peau gratui
       className="cs-root relative flex h-screen w-screen items-center justify-center overflow-hidden text-white"
       style={{ perspective: "1500px", background: "linear-gradient(160deg, #0B0C0D 0%, #0A0A0B 55%, #0B0C0D 100%)" }}
     >
-      <style dangerouslySetInnerHTML={{ __html: STYLES }} />
       <div className="cs-grain" aria-hidden />
       <div className="cs-grid pointer-events-none absolute inset-0 z-0 opacity-60" aria-hidden />
       <div className="cs-glow pointer-events-none absolute left-1/2 top-[42%] h-[620px] w-[620px] -translate-x-1/2 -translate-y-1/2 opacity-70" aria-hidden />

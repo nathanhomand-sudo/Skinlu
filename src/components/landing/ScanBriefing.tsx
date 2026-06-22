@@ -1,10 +1,11 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import NextImage from "next/image";
 import { Button } from "@/components/ui";
 import { QuestionPrompt, type QuestionConfig, type QuestionAnswer } from "@/components/ui/question-prompt";
+import { isOnboarded, setOnboarded } from "@/lib/onboarding";
 
 /* Briefing avant analyse — questions rendues par le composant QuestionPrompt
    (logique fournie : single/multi, badges A/B/C) restylé premium Skinlu.
@@ -32,6 +33,12 @@ export function ScanBriefing() {
   const [analyzing, setAnalyzing] = useState(false);
   const total = QUESTIONS.length;
 
+  // Returning user (déjà onboardé) → on saute intro + questionnaire,
+  // on démarre direct sur la photo.
+  useEffect(() => {
+    if (isOnboarded()) setPhase("photo");
+  }, []);
+
   const onAnswer = (ans: QuestionAnswer) => {
     setAnswers((prev) => prev.map((a, i) => (i === step ? ans : a)));
     if (step < total - 1) setStep((s) => s + 1);
@@ -41,8 +48,14 @@ export function ScanBriefing() {
 
   const capture = () => {
     setAnalyzing(true);
-    // Analyse → signup (gate juste avant le résultat = pic d'investissement).
-    setTimeout(() => setPhase("signup"), 1700);
+    // Analyse → signup (1re fois) ; returning user déjà inscrit → direct résultat.
+    setTimeout(() => (isOnboarded() ? router.push("/v2/result") : setPhase("signup")), 1700);
+  };
+
+  // Signup démo : on pose le flag puis on montre le résultat.
+  const completeSignup = () => {
+    setOnboarded();
+    router.push("/v2/result");
   };
 
   const safe: React.CSSProperties = {
@@ -52,7 +65,6 @@ export function ScanBriefing() {
 
   return (
     <main className="relative min-h-screen overflow-hidden">
-      <style dangerouslySetInnerHTML={{ __html: "@keyframes sb-sweep{0%{top:8%;opacity:0}15%{opacity:1}85%{opacity:1}100%{top:86%;opacity:0}}.cs-scan-sweep{animation:sb-sweep 1.6s ease-in-out infinite}" }} />
       <div
         aria-hidden
         className="pointer-events-none absolute left-1/2 top-1/4 h-[480px] w-[600px] -translate-x-1/2 -translate-y-1/2 opacity-60"
@@ -189,7 +201,7 @@ export function ScanBriefing() {
               {/* Google */}
               <button
                 type="button"
-                onClick={() => router.push("/v2/result")}
+                onClick={completeSignup}
                 style={{ WebkitTapHighlightColor: "transparent" }}
                 className="flex h-14 w-full select-none appearance-none items-center justify-center gap-3 rounded-lg bg-white text-[0.95rem] font-bold text-[#1a1a1a] outline-none transition active:scale-[0.98]"
               >
@@ -199,7 +211,7 @@ export function ScanBriefing() {
               {/* Apple */}
               <button
                 type="button"
-                onClick={() => router.push("/v2/result")}
+                onClick={completeSignup}
                 style={{ WebkitTapHighlightColor: "transparent" }}
                 className="flex h-14 w-full select-none appearance-none items-center justify-center gap-3 rounded-lg bg-black text-[0.95rem] font-bold text-white outline-none ring-1 ring-white/15 transition active:scale-[0.98]"
               >
@@ -209,7 +221,7 @@ export function ScanBriefing() {
               {/* Email */}
               <button
                 type="button"
-                onClick={() => router.push("/v2/result")}
+                onClick={completeSignup}
                 style={{ WebkitTapHighlightColor: "transparent" }}
                 className="flex h-14 w-full select-none appearance-none items-center justify-center gap-3 rounded-lg border border-white/15 bg-transparent text-[0.95rem] font-bold text-white outline-none transition active:scale-[0.98]"
               >
