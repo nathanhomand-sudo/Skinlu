@@ -94,7 +94,7 @@ export function ScanBriefing() {
               type="button"
               onClick={goBack}
               aria-label="Retour"
-              className="flex h-9 w-9 shrink-0 select-none items-center justify-center rounded-full border border-white/10 text-white/60 outline-none transition hover:text-white focus:outline-none"
+              className="flex h-9 w-9 shrink-0 select-none appearance-none items-center justify-center rounded-full border border-white/10 bg-transparent text-white/60 outline-none transition hover:text-white focus:outline-none"
               style={{ WebkitTapHighlightColor: "transparent" }}
             >
               <svg className="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" aria-hidden><path d="M15 18l-6-6 6-6" strokeLinecap="round" strokeLinejoin="round" /></svg>
@@ -132,17 +132,19 @@ export function ScanBriefing() {
                 : "Centre ton visage dans le cadre. Le scan observe uniquement ce qui est visible aujourd'hui."}
             </p>
 
-            <div className="relative mx-auto mt-7 aspect-[3/4] w-full max-w-[300px] overflow-hidden rounded-[2rem] border border-white/10 bg-black">
-              <NextImage src="/faces/scan-demo.webp" alt="" fill priority sizes="300px"
-                style={{ objectFit: "cover", objectPosition: "50% 30%" }} className={analyzing ? "opacity-95" : "opacity-80"} />
-              <div className="absolute inset-0" style={{ background: "radial-gradient(60% 55% at 50% 42%, transparent 60%, rgba(0,0,0,.6))" }} />
-              <div className="absolute left-1/2 top-[42%] h-[58%] w-[64%] -translate-x-1/2 -translate-y-1/2 rounded-[50%] border-2 border-dashed border-white/40" />
-              {[["left-4 top-4", "border-l-2 border-t-2"], ["right-4 top-4", "border-r-2 border-t-2"], ["left-4 bottom-4", "border-l-2 border-b-2"], ["right-4 bottom-4", "border-r-2 border-b-2"]].map(([pos, b], i) => (
-                <span key={i} className={`absolute h-6 w-6 rounded-[3px] border-white/50 ${pos} ${b}`} />
-              ))}
-              {analyzing && (
-                <div className="cs-scan-sweep pointer-events-none absolute inset-x-0 h-px" style={{ background: "linear-gradient(90deg, transparent, rgba(94,234,212,.9), transparent)", boxShadow: "0 0 14px 2px rgba(94,234,212,.6)" }} />
-              )}
+            <div className="mt-7 flex justify-center">
+              <div className="relative overflow-hidden rounded-[2rem] border border-white/10 bg-black" style={{ width: "min(300px, 100%)", aspectRatio: "3 / 4" }}>
+                <NextImage src="/faces/scan-guide.webp" alt="" fill priority sizes="300px"
+                  style={{ objectFit: "cover", objectPosition: "center" }} className={analyzing ? "opacity-95" : "opacity-80"} />
+                <div className="absolute inset-0" style={{ background: "radial-gradient(62% 58% at 50% 46%, transparent 62%, rgba(0,0,0,.55))" }} />
+                <div className="absolute rounded-[50%] border-2 border-dashed border-white/40" style={{ left: "50%", top: "48%", width: "62%", height: "68%", transform: "translate(-50%,-50%)" }} />
+                {[["left-4 top-4", "border-l-2 border-t-2"], ["right-4 top-4", "border-r-2 border-t-2"], ["left-4 bottom-4", "border-l-2 border-b-2"], ["right-4 bottom-4", "border-r-2 border-b-2"]].map(([pos, b], i) => (
+                  <span key={i} className={`absolute h-6 w-6 rounded-[3px] border-white/50 ${pos} ${b}`} />
+                ))}
+                {analyzing && (
+                  <div className="cs-scan-sweep pointer-events-none absolute inset-x-0 h-px" style={{ background: "linear-gradient(90deg, transparent, rgba(94,234,212,.9), transparent)", boxShadow: "0 0 14px 2px rgba(94,234,212,.6)" }} />
+                )}
+              </div>
             </div>
 
             <div className="mt-8">
@@ -156,7 +158,7 @@ export function ScanBriefing() {
                   <Button variant="primary" size="lg" className="w-full" onClick={capture}>
                     Lancer mon analyse
                   </Button>
-                  <button type="button" onClick={() => { setPhase("questions"); setStep(total - 1); }} style={{ WebkitTapHighlightColor: "transparent" }} className="select-none text-[0.82rem] font-medium text-white/50 underline-offset-4 outline-none transition hover:text-white/80 hover:underline focus:outline-none">
+                  <button type="button" onClick={() => { setPhase("questions"); setStep(total - 1); }} style={{ WebkitTapHighlightColor: "transparent" }} className="select-none appearance-none border-0 bg-transparent text-[0.82rem] font-medium text-white/50 underline-offset-4 outline-none transition hover:text-white/80 hover:underline focus:outline-none">
                     Revoir mes réponses
                   </button>
                 </div>

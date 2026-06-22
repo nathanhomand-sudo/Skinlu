@@ -118,7 +118,8 @@ export function QuestionPrompt({
 
   return (
     <div className="flex flex-1 flex-col">
-      <div className="flex flex-1 flex-col justify-center">
+      {/* Titre + options en haut (sous la barre), pas centrés */}
+      <div className="pt-7">
         <h2 className="font-display text-[clamp(1.5rem,5vw,2rem)] font-bold leading-tight text-white">
           {activeQuestion.title}
         </h2>
@@ -186,8 +187,8 @@ export function QuestionPrompt({
         )}
       </div>
 
-      {/* Continuer */}
-      <div className="mt-8 shrink-0">
+      {/* Continuer — collé en bas */}
+      <div className="mt-auto shrink-0 pt-8">
         <button
           type="button"
           onClick={handleSubmit}
@@ -197,7 +198,7 @@ export function QuestionPrompt({
           {primaryLabel}
         </button>
         {onPreviousQuestion && (
-          <button type="button" onClick={onPreviousQuestion} style={{ WebkitTapHighlightColor: "transparent" }} className="mt-3 block w-full select-none text-center text-[0.82rem] font-medium text-white/50 outline-none transition hover:text-white/80 focus:outline-none">
+          <button type="button" onClick={onPreviousQuestion} style={{ WebkitTapHighlightColor: "transparent" }} className="mt-3 block w-full select-none appearance-none border-0 bg-transparent text-center text-[0.82rem] font-medium text-white/50 outline-none transition hover:text-white/80 focus:outline-none">
             Retour
           </button>
         )}
