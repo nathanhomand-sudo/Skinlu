@@ -5,13 +5,20 @@ import NextImage from "next/image";
 import { motion, useSpring, useTransform, useInView } from "motion/react";
 import { Button } from "@/components/ui";
 import type { SkinProfile } from "@/lib/skin-profile";
-import { type ScanResult, CONCERN_LABEL, CONCERN_SHORT, SKIN_TYPE_LABEL } from "@/lib/scan-result";
+import {
+  type ScanResult,
+  CONCERN_LABEL,
+  CONCERN_SHORT,
+  SKIN_TYPE_LABEL,
+  SCORE_PARTS,
+  scoreLabel,
+} from "@/lib/scan-result";
 import type { Concern } from "@/lib/skin-diagnostic";
 
 /* Écran AHA — façon Cal AI, peu de texte, beaucoup d'espace.
-   Photo (preuve : 4 zones analysées) → score + interprétation →
-   "Ce qu'on a remarqué" (1 positif + 2 améliorations) → priorité (1 seule
-   fois) → CTA. Le détail (routine, zones complètes) vit derrière le CTA. */
+   Photo (preuve : zones analysées) → score (vrai, issu des 4 sous-scores /25)
+   + interprétation → "Ce qu'on a remarqué" (positifs ✓ + axes ⚠) →
+   priorité (1 seule fois) → CTA. Le détail vit derrière le CTA. */
 
 const ZONE_KEYS = ["forehead", "cheeks", "t_zone", "texture"] as const;
 const ZONE_POSITIVE: Record<(typeof ZONE_KEYS)[number], string> = {
@@ -50,38 +57,38 @@ export function SkinReportCard({
 
   const zonesCount = result?.zones ? ZONE_KEYS.length : 4;
 
-  const score = result ? clamp(94 - (result.concerns?.length ?? 1) * 9, 62, 94) : 82;
-  const scoreLabel =
-    score >= 82 ? "Très bon équilibre" : score >= 70 ? "Bon équilibre" : score >= 55 ? "Équilibre à renforcer" : "À améliorer";
+  // Vrai score = somme des 4 sous-scores /25 (jamais arbitraire). Fallback si
+  // pas d'analyse IA : on dérive un score doux à partir des concerns.
+  const scores = result?.scores ?? null;
+  const score = scores ? scores.total : result ? clamp(94 - (result.concerns?.length ?? 1) * 9, 62, 94) : 82;
+  const label = scoreLabel(score);
+  const confidencePct = result?.confidence != null ? Math.round(result.confidence * 100) : null;
 
-  // 1 point positif (zone sans concern, ou générique)
-  let positive = "Bonne base globale";
-  if (result?.zones) {
-    const good = ZONE_KEYS.find((k) => !result.zones![k].concern);
-    if (good) positive = ZONE_POSITIVE[good];
-  }
+  // "Ce qu'on a remarqué" : priorité aux observations renvoyées par l'IA.
+  let positives: string[] = result?.positive_observations?.filter(Boolean) ?? [];
+  let warns: string[] = result?.improvement_axes?.filter(Boolean) ?? [];
 
-  // 2 améliorations — concerns SAUF la priorité (pour ne pas la répéter)
-  let improvements: string[] = result
-    ? Array.from(new Set((result.concerns ?? []).filter((c) => c !== result.top_priority)))
-        .slice(0, 2)
-        .map((c: Concern) => CONCERN_SHORT[c])
-    : [];
-  if (!improvements.length) {
-    // fallback : zones porteuses d'un concern ≠ priorité
+  // Fallback si l'IA n'a pas renvoyé d'observations structurées.
+  if (!positives.length) {
+    let pos = "Bonne base globale";
     if (result?.zones) {
-      improvements = ZONE_KEYS
-        .map((k) => result.zones![k].concern)
-        .filter((c): c is Concern => !!c && c !== result.top_priority)
-        .slice(0, 2)
-        .map((c) => CONCERN_SHORT[c]);
+      const good = ZONE_KEYS.find((k) => !result.zones![k].concern);
+      if (good) pos = ZONE_POSITIVE[good];
     }
-    if (!improvements.length) improvements = ["Régularité de la routine"];
+    positives = [pos];
+  }
+  if (!warns.length) {
+    warns = result
+      ? Array.from(new Set((result.concerns ?? []).filter((c) => c !== result.top_priority)))
+          .slice(0, 2)
+          .map((c: Concern) => CONCERN_SHORT[c])
+      : [];
+    if (!warns.length) warns = [profile?.priority ? "Tenir la routine dans le temps" : "Régularité de la routine"];
   }
 
   const insights = [
-    { kind: "good" as const, label: positive },
-    ...improvements.map((label) => ({ kind: "warn" as const, label })),
+    ...positives.slice(0, 1).map((label) => ({ kind: "good" as const, label })),
+    ...warns.slice(0, 2).map((label) => ({ kind: "warn" as const, label })),
   ].slice(0, 3);
 
   return (
@@ -111,13 +118,42 @@ export function SkinReportCard({
       <div className="space-y-7 px-6 pb-7 pt-6">
         {/* Score + interprétation */}
         <div>
-          <p className="text-[0.78rem] font-medium uppercase tracking-[0.14em] text-white/45">Score d&apos;équilibre</p>
+          <div className="flex items-center justify-between">
+            <p className="text-[0.78rem] font-medium uppercase tracking-[0.14em] text-white/45">Score d&apos;équilibre</p>
+            {confidencePct != null && (
+              <span className="text-[0.72rem] font-medium text-white/35">Fiabilité {confidencePct}%</span>
+            )}
+          </div>
           <div className="mt-1 flex items-end gap-3">
             <p className="font-display text-[3.4rem] font-bold leading-none text-white">
               <AnimatedNumber value={score} /><span className="text-2xl text-white/30"> /100</span>
             </p>
-            <span className="mb-2 rounded-full bg-emerald-400/15 px-2.5 py-1 text-[0.72rem] font-bold text-emerald-300">{scoreLabel}</span>
+            <span className="mb-2 rounded-full bg-emerald-400/15 px-2.5 py-1 text-[0.72rem] font-bold text-emerald-300">{label}</span>
           </div>
+
+          {/* Détail du score : 4 sous-critères /25 (le score n'est pas arbitraire) */}
+          {scores && (
+            <div className="mt-4 space-y-2.5">
+              {SCORE_PARTS.map((p) => {
+                const v = scores[p.key];
+                return (
+                  <div key={p.key} className="flex items-center gap-3">
+                    <span className="w-[8.5rem] shrink-0 text-[0.82rem] text-white/55">{p.label}</span>
+                    <span className="relative h-1.5 flex-1 overflow-hidden rounded-full bg-white/8">
+                      <motion.span
+                        className="absolute inset-y-0 left-0 rounded-full bg-emerald-400/80"
+                        initial={{ width: 0 }}
+                        whileInView={{ width: `${(v / 25) * 100}%` }}
+                        viewport={{ once: true }}
+                        transition={{ duration: 0.7, ease: "easeOut" }}
+                      />
+                    </span>
+                    <span className="w-9 shrink-0 text-right text-[0.78rem] tabular-nums text-white/45">{v}/25</span>
+                  </div>
+                );
+              })}
+            </div>
+          )}
         </div>
 
         {/* Ce qu'on a remarqué — mini AHA */}
@@ -149,7 +185,7 @@ export function SkinReportCard({
             Voir ma routine complète
           </Button>
           <p className="mt-3 text-center text-[0.8rem] leading-relaxed text-white/40">
-            Ta routine sur-mesure et le détail par zone t&apos;attendent à l&apos;intérieur.
+            Analyse cosmétique indicative — ne remplace pas l&apos;avis d&apos;un professionnel de santé.
           </p>
         </div>
       </div>

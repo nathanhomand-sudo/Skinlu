@@ -124,6 +124,7 @@ export async function POST(request: Request) {
     const response = await withTimeout(
       client.responses.create({
         model: process.env.OPENAI_VISION_MODEL ?? "gpt-4.1-mini",
+        temperature: 0, // scoring reproductible : même photo → même note
         input: [
           {
             role: "user",
@@ -183,6 +184,9 @@ export async function POST(request: Request) {
       concerns: diagnostic.concerns.slice(0, 2),
       top_priority: diagnostic.top_priority,
       summary: diagnostic.summary,
+      scores: diagnostic.scores ?? null,
+      positive_observations: diagnostic.positive_observations ?? [],
+      improvement_axes: diagnostic.improvement_axes ?? [],
       disclaimer: "Analyse cosmetique indicative. Ne remplace pas l'avis d'un professionnel de sante.",
       zones: diagnostic.zones ?? null,
       confidence: diagnostic.confidence ?? null,

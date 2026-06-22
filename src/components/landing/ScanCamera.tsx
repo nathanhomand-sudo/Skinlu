@@ -16,6 +16,15 @@ const MODEL_URL = "https://storage.googleapis.com/mediapipe-models/face_detector
 const MIN_BRIGHT = 48;
 const MIN_SHARP = 6;
 const MIN_FACE_WR = 0.2;
+const MAX_TILT_DEG = 16; // tête penchée max (angle entre les deux yeux)
+
+// Inclinaison de la tête (deg) à partir des keypoints yeux de MediaPipe.
+function tiltOf(kp?: { x: number; y: number }[]): number {
+  if (!kp || kp.length < 2) return 0;
+  let t = Math.abs((Math.atan2(kp[1].y - kp[0].y, kp[1].x - kp[0].x) * 180) / Math.PI);
+  if (t > 90) t = 180 - t;
+  return t;
+}
 
 type Status = "loading" | "live" | "checking" | "rejected" | "error";
 
@@ -57,7 +66,7 @@ export function ScanCamera({ onCapture }: { onCapture: (dataUrl: string) => void
   const videoRef = useRef<HTMLVideoElement>(null);
   const streamRef = useRef<MediaStream | null>(null);
   const detectorRef = useRef<MediaPipeFaceDetector | null>(null);
-  const liveRef = useRef({ faceSeen: false, wr: 0, centered: false });
+  const liveRef = useRef({ faceSeen: false, wr: 0, centered: false, tilt: 0 });
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const [status, setStatus] = useState<Status>("loading");
@@ -118,7 +127,7 @@ export function ScanCamera({ onCapture }: { onCapture: (dataUrl: string) => void
       try {
         const det = detector.detectForVideo(video, performance.now()).detections[0];
         if (!det?.boundingBox) {
-          liveRef.current = { faceSeen: false, wr: 0, centered: false };
+          liveRef.current = { faceSeen: false, wr: 0, centered: false, tilt: 0 };
           setHint("On ne voit pas ton visage — mets-toi face caméra.");
           return;
         }
@@ -127,10 +136,12 @@ export function ScanCamera({ onCapture }: { onCapture: (dataUrl: string) => void
         const wr = b.width / vw;
         const cx = (b.originX + b.width / 2) / vw, cy = (b.originY + b.height / 2) / vh;
         const centered = Math.abs(cx - 0.5) < 0.16 && Math.abs(cy - 0.48) < 0.18;
-        liveRef.current = { faceSeen: true, wr, centered };
+        const tilt = tiltOf(det.keypoints);
+        liveRef.current = { faceSeen: true, wr, centered, tilt };
         if (wr < 0.26) setHint("Rapproche-toi un peu.");
         else if (wr > 0.62) setHint("Recule légèrement.");
         else if (!centered) setHint("Centre ton visage dans l'ovale.");
+        else if (tilt > MAX_TILT_DEG) setHint("Garde la tête bien droite.");
         else setHint("Parfait — tu peux lancer ton scan.");
       } catch { /* ignore */ }
     }, 320);
@@ -155,6 +166,8 @@ export function ScanCamera({ onCapture }: { onCapture: (dataUrl: string) => void
     const r: string[] = [];
     if (detectorRef.current && !live.faceSeen) r.push("Aucun visage détecté");
     if (detectorRef.current && live.faceSeen && live.wr < MIN_FACE_WR) r.push("Visage trop petit — rapproche-toi");
+    if (detectorRef.current && live.faceSeen && !live.centered) r.push("Visage mal cadré — centre-toi");
+    if (detectorRef.current && live.faceSeen && live.tilt > MAX_TILT_DEG) r.push("Tête penchée — garde-la droite");
     if (brightness < MIN_BRIGHT) r.push("Lumière insuffisante");
     if (sharpness < MIN_SHARP) r.push("Photo floue — tiens le téléphone stable");
 
@@ -179,7 +192,7 @@ export function ScanCamera({ onCapture }: { onCapture: (dataUrl: string) => void
     const { brightness, sharpness } = sampleMetrics(img, iw, ih);
 
     // Détection visage one-shot (mode IMAGE) sur l'import.
-    let faceOk = true, faceWr = 1;
+    let faceOk = true, faceWr = 1, faceTilt = 0;
     try {
       const { FaceDetector, FilesetResolver } = await import("@mediapipe/tasks-vision");
       const vision = await FilesetResolver.forVisionTasks(WASM_URL);
@@ -191,12 +204,14 @@ export function ScanCamera({ onCapture }: { onCapture: (dataUrl: string) => void
       const det = d.detect(img).detections[0];
       faceOk = !!det?.boundingBox;
       faceWr = det?.boundingBox ? det.boundingBox.width / iw : 0;
+      faceTilt = tiltOf(det?.keypoints);
       d.close();
     } catch { faceOk = true; /* si MediaPipe indispo, on ne bloque pas sur le visage */ }
 
     const r: string[] = [];
     if (!faceOk) r.push("Aucun visage détecté sur la photo");
     else if (faceWr < MIN_FACE_WR) r.push("Visage trop petit sur la photo");
+    else if (faceTilt > MAX_TILT_DEG) r.push("Tête penchée — garde-la droite");
     if (brightness < MIN_BRIGHT) r.push("Photo trop sombre");
     if (sharpness < MIN_SHARP) r.push("Photo floue");
 

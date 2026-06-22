@@ -5,15 +5,43 @@
 import type { Concern } from "@/lib/skin-diagnostic";
 
 export type ScanZone = { observation: string; concern: Concern | null };
+export type ScanScores = {
+  evenness: number; // uniformité du teint /25
+  texture: number; // texture /25
+  balance: number; // équilibre apparent /25
+  goal_match: number; // objectif utilisateur /25
+  total: number; // /100
+};
 export type ScanResult = {
   skin_type: string;
   top_priority: Concern;
   concerns?: Concern[];
   summary: string;
+  scores?: ScanScores | null;
+  positive_observations?: string[];
+  improvement_axes?: string[];
   zones?: { forehead: ScanZone; cheeks: ScanZone; t_zone: ScanZone; texture: ScanZone } | null;
   confidence?: number | null;
   derma_flag?: boolean;
 };
+
+// Sous-scores pour l'affichage (libellé + clé)
+export const SCORE_PARTS: { key: keyof ScanScores; label: string }[] = [
+  { key: "evenness", label: "Uniformité du teint" },
+  { key: "texture", label: "Texture" },
+  { key: "balance", label: "Équilibre apparent" },
+  { key: "goal_match", label: "Ton objectif" },
+];
+
+export function scoreLabel(total: number): string {
+  return total >= 82
+    ? "Très bon équilibre"
+    : total >= 68
+      ? "Bon équilibre"
+      : total >= 52
+        ? "Équilibre à renforcer"
+        : "À rééquilibrer";
+}
 
 const KEY = "skinlu_scan_result";
 
