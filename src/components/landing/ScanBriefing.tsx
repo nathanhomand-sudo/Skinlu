@@ -23,6 +23,10 @@ const QUESTIONS: QuestionConfig[] = [
   { kind: "single", title: "Ta routine actuelle est plutôt…", options: opt(["Je ne fais presque rien", "Simple", "Régulière", "Trop chargée", "Je change souvent de produits"]) },
 ];
 
+// Micro-copy pour accompagner (gamification légère)
+const ENCOURAGE = ["On commence.", "Ça avance.", "Pile au milieu.", "Plus que quelques-unes.", "Presque fini.", "Dernière question !"];
+const ANALYZE_MSGS = ["On lit ta zone T…", "On regarde tes joues…", "On évalue ta texture…", "On croise avec tes réponses…"];
+
 type Phase = "intro" | "questions" | "photo" | "signup";
 
 export function ScanBriefing() {
@@ -31,6 +35,7 @@ export function ScanBriefing() {
   const [step, setStep] = useState(0);
   const [answers, setAnswers] = useState<QuestionAnswer[]>(QUESTIONS.map((q) => ({ kind: q.kind, selectedIds: [] })));
   const [analyzing, setAnalyzing] = useState(false);
+  const [aMsg, setAMsg] = useState(0);
   const total = QUESTIONS.length;
 
   // Returning user (déjà onboardé) → on saute intro + questionnaire,
@@ -38,6 +43,13 @@ export function ScanBriefing() {
   useEffect(() => {
     if (isOnboarded()) setPhase("photo");
   }, []);
+
+  // Messages qui défilent pendant l'analyse (accompagnement).
+  useEffect(() => {
+    if (!analyzing) return;
+    const id = setInterval(() => setAMsg((m) => (m + 1) % ANALYZE_MSGS.length), 520);
+    return () => clearInterval(id);
+  }, [analyzing]);
 
   const onAnswer = (ans: QuestionAnswer) => {
     setAnswers((prev) => prev.map((a, i) => (i === step ? ans : a)));
@@ -117,6 +129,7 @@ export function ScanBriefing() {
             </div>
             <span className="shrink-0 text-[0.78rem] font-semibold tabular-nums text-white/45">{step + 1}/{total}</span>
           </div>
+          <p className="mt-2 shrink-0 text-[0.72rem] font-medium text-emerald-300/70">{ENCOURAGE[step]}</p>
 
           {/* Question (composant fourni, restylé) */}
           <QuestionPrompt
@@ -141,7 +154,7 @@ export function ScanBriefing() {
             </h1>
             <p className="mx-auto mt-3 max-w-sm text-[0.95rem] leading-relaxed text-white/55">
               {analyzing
-                ? "On lit tes zones visibles et on les croise avec tes réponses."
+                ? ANALYZE_MSGS[aMsg]
                 : "Centre ton visage dans le cadre. Le scan observe uniquement ce qui est visible aujourd'hui."}
             </p>
 

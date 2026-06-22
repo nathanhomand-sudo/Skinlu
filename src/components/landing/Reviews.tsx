@@ -17,7 +17,7 @@ const LOOP = [...TESTIMONIALS, ...TESTIMONIALS];
 
 export function Reviews() {
   return (
-    <section className="relative overflow-hidden py-20 sm:py-28">
+    <section className="relative overflow-hidden border-t border-white/[0.06] pb-24 pt-24 sm:pb-32 sm:pt-36">
       <style dangerouslySetInnerHTML={{ __html: "@keyframes x-slider{from{transform:translateX(0)}to{transform:translateX(-50%)}}.x-slider{animation:x-slider 55s linear infinite}.x-slider:hover{animation-play-state:paused}@media(prefers-reduced-motion:reduce){.x-slider{animation:none}}" }} />
 
       <div className="mx-auto mb-12 max-w-xl px-6 text-center">

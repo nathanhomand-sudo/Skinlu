@@ -37,7 +37,7 @@ export default function LandingV2Page() {
       <CinematicScene onScanClick={scan} />
 
       {/* Comment ça marche — 3 étapes */}
-      <section className="relative px-5 py-20 sm:py-24">
+      <section className="relative px-5 pb-28 pt-20 sm:pb-40 sm:pt-28">
         <div className="mx-auto max-w-5xl">
           <div className="text-center">
             <span className="inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/[0.04] px-3 py-1 text-[0.7rem] font-semibold uppercase tracking-[0.16em] text-emerald-300/90">
