@@ -4663,11 +4663,6 @@ body:has(.v2-dark) {
 /* briefing — sweep d'analyse */
 @keyframes sb-sweep { 0% { top: 8%; opacity: 0; } 15% { opacity: 1; } 85% { opacity: 1; } 100% { top: 86%; opacity: 0; } }
 .cs-scan-sweep { animation: sb-sweep 1.6s ease-in-out infinite; }
-/* avis — bandeau qui défile */
-@keyframes x-slider { from { transform: translateX(0); } to { transform: translateX(-50%); } }
-.x-slider { animation: x-slider 55s linear infinite; }
-.x-slider:hover { animation-play-state: paused; }
-@media (prefers-reduced-motion: reduce) { .x-slider { animation: none; } }
 /* Fallback prefers-reduced-motion (scène cinématique) */
 .cs-root.cs-reduced { height: auto !important; min-height: auto; overflow: visible; display: block; }
 .cs-reduced .cs-reveal { visibility: visible !important; }
