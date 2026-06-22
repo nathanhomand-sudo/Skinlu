@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import NextImage from "next/image";
 import { Button } from "@/components/ui";
 import { QuestionPrompt, type QuestionConfig, type QuestionAnswer } from "@/components/ui/question-prompt";
+import { ScanCamera } from "@/components/landing/ScanCamera";
 import { isOnboarded, setOnboarded } from "@/lib/onboarding";
 import { saveProfile } from "@/lib/skin-profile";
 
@@ -37,6 +38,7 @@ export function ScanBriefing() {
   const [answers, setAnswers] = useState<QuestionAnswer[]>(QUESTIONS.map((q) => ({ kind: q.kind, selectedIds: [] })));
   const [analyzing, setAnalyzing] = useState(false);
   const [aMsg, setAMsg] = useState(0);
+  const [shot, setShot] = useState<string | null>(null);
   const total = QUESTIONS.length;
 
   // Returning user (déjà onboardé) → on saute intro + questionnaire,
@@ -59,7 +61,8 @@ export function ScanBriefing() {
   };
   const goBack = () => (step === 0 ? setPhase("intro") : setStep((s) => s - 1));
 
-  const capture = () => {
+  const capture = (dataUrl?: string) => {
+    if (dataUrl) setShot(dataUrl);
     setAnalyzing(true);
     // Analyse → signup (1re fois) ; returning user déjà inscrit → direct résultat.
     setTimeout(() => (isOnboarded() ? router.push("/v2/result") : setPhase("signup")), 1700);
@@ -169,38 +172,35 @@ export function ScanBriefing() {
                 : "Centre ton visage dans le cadre. Le scan observe uniquement ce qui est visible aujourd'hui."}
             </p>
 
-            <div className="mt-7 flex justify-center">
-              <div className="relative overflow-hidden rounded-[2rem] border border-white/10 bg-black" style={{ width: "min(300px, 100%)", aspectRatio: "3 / 4" }}>
-                <NextImage src="/faces/scan-guide.webp" alt="" fill priority sizes="300px"
-                  style={{ objectFit: "cover", objectPosition: "center" }} className={analyzing ? "opacity-95" : "opacity-80"} />
-                <div className="absolute inset-0" style={{ background: "radial-gradient(62% 58% at 50% 46%, transparent 62%, rgba(0,0,0,.55))" }} />
-                <div className="absolute rounded-[50%] border-2 border-dashed border-white/40" style={{ left: "50%", top: "48%", width: "62%", height: "68%", transform: "translate(-50%,-50%)" }} />
-                {[["left-4 top-4", "border-l-2 border-t-2"], ["right-4 top-4", "border-r-2 border-t-2"], ["left-4 bottom-4", "border-l-2 border-b-2"], ["right-4 bottom-4", "border-r-2 border-b-2"]].map(([pos, b], i) => (
-                  <span key={i} className={`absolute h-6 w-6 rounded-[3px] border-white/50 ${pos} ${b}`} />
-                ))}
-                {analyzing && (
-                  <div className="cs-scan-sweep pointer-events-none absolute inset-x-0 h-px" style={{ background: "linear-gradient(90deg, transparent, rgba(94,234,212,.9), transparent)", boxShadow: "0 0 14px 2px rgba(94,234,212,.6)" }} />
-                )}
-              </div>
-            </div>
-
-            <div className="mt-8">
-              {analyzing ? (
-                <div className="flex items-center justify-center gap-2 text-white/55">
+            {analyzing ? (
+              <>
+                {/* Frame figée (photo capturée) + sweep d'analyse */}
+                <div className="mt-7 flex justify-center">
+                  <div className="relative overflow-hidden rounded-[2rem] border border-white/10 bg-black" style={{ width: "min(300px, 100%)", aspectRatio: "3 / 4" }}>
+                    {shot ? (
+                      // eslint-disable-next-line @next/next/no-img-element
+                      <img src={shot} alt="" className="absolute inset-0 h-full w-full object-cover" />
+                    ) : (
+                      <NextImage src="/faces/scan-guide.webp" alt="" fill priority sizes="300px" style={{ objectFit: "cover", objectPosition: "center" }} className="opacity-95" />
+                    )}
+                    <div className="absolute inset-0" style={{ background: "radial-gradient(62% 58% at 50% 46%, transparent 62%, rgba(0,0,0,.55))" }} />
+                    <div className="cs-scan-sweep pointer-events-none absolute inset-x-0 h-px" style={{ background: "linear-gradient(90deg, transparent, rgba(94,234,212,.9), transparent)", boxShadow: "0 0 14px 2px rgba(94,234,212,.6)" }} />
+                  </div>
+                </div>
+                <div className="mt-8 flex items-center justify-center gap-2 text-white/55">
                   <span className="h-4 w-4 animate-spin rounded-full border-2 border-white/20 border-t-emerald-300" />
                   <span className="text-[0.9rem] font-medium">Analyse en cours…</span>
                 </div>
-              ) : (
-                <div className="flex flex-col items-center gap-3">
-                  <Button variant="primary" size="lg" className="w-full" onClick={capture}>
-                    Lancer mon analyse
-                  </Button>
-                  <button type="button" onClick={() => { setPhase("questions"); setStep(total - 1); }} style={{ WebkitTapHighlightColor: "transparent" }} className="select-none appearance-none border-0 bg-transparent text-[0.82rem] font-medium text-white/50 underline-offset-4 outline-none transition hover:text-white/80 hover:underline focus:outline-none">
-                    Revoir mes réponses
-                  </button>
-                </div>
-              )}
-            </div>
+              </>
+            ) : (
+              <>
+                {/* Caméra guidée temps réel */}
+                <ScanCamera onCapture={capture} />
+                <button type="button" onClick={() => { setPhase("questions"); setStep(total - 1); }} style={{ WebkitTapHighlightColor: "transparent" }} className="mt-5 select-none appearance-none border-0 bg-transparent text-[0.82rem] font-medium text-white/50 underline-offset-4 outline-none transition hover:text-white/80 hover:underline focus:outline-none">
+                  Revoir mes réponses
+                </button>
+              </>
+            )}
           </div>
         </div>
       )}
