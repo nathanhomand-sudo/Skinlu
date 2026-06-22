@@ -36,26 +36,26 @@ export default function LandingV2Page() {
       {/* Intro immersive */}
       <CinematicScene onScanClick={scan} />
 
-      {/* Comment ça marche — 3 étapes */}
-      <section className="relative px-5 pb-28 pt-20 sm:pb-40 sm:pt-28">
+      {/* Comment ça marche — 3 étapes (section claire) */}
+      <section className="relative px-5 pb-24 pt-20 sm:pb-32 sm:pt-28" style={{ background: "#F4F0E9", color: "#211e1a" }}>
         <div className="mx-auto max-w-5xl">
           <div className="text-center">
-            <span className="inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/[0.04] px-3 py-1 text-[0.7rem] font-semibold uppercase tracking-[0.16em] text-emerald-300/90">
+            <span className="inline-flex items-center gap-2 rounded-full px-3 py-1 text-[0.7rem] font-semibold uppercase tracking-[0.16em]" style={{ border: "1px solid rgba(0,0,0,.1)", background: "rgba(15,107,95,.08)", color: "#0F6B5F" }}>
               Comment ça marche
             </span>
-            <h2 className="font-display mt-5 text-[clamp(1.8rem,4.5vw,2.8rem)] font-bold leading-[1.1] text-white">
+            <h2 className="font-display mt-5 text-[clamp(1.8rem,4.5vw,2.8rem)] font-bold leading-[1.1]" style={{ color: "#1c1a17" }}>
               Trois étapes, une minute.
             </h2>
           </div>
 
           <div className="mt-12 grid gap-4 sm:grid-cols-3">
             {STEPS.map((s) => (
-              <div key={s.n} className="rounded-2xl border border-white/[0.06] bg-white/[0.025] p-6">
-                <span className="flex h-9 w-9 items-center justify-center rounded-full bg-emerald-400/15 font-display text-base font-bold text-emerald-300">
+              <div key={s.n} className="rounded-2xl p-6" style={{ background: "#fff", border: "1px solid #e8e2d6", boxShadow: "0 14px 34px -16px rgba(40,33,20,.18)" }}>
+                <span className="flex h-9 w-9 items-center justify-center rounded-full font-display text-base font-bold" style={{ background: "rgba(15,107,95,.12)", color: "#0F6B5F" }}>
                   {s.n}
                 </span>
-                <h3 className="font-display mt-4 text-lg font-bold text-white">{s.t}</h3>
-                <p className="mt-2 text-[0.92rem] leading-relaxed text-white/55">{s.d}</p>
+                <h3 className="font-display mt-4 text-lg font-bold" style={{ color: "#1c1a17" }}>{s.t}</h3>
+                <p className="mt-2 text-[0.92rem] leading-relaxed" style={{ color: "#6b655c" }}>{s.d}</p>
               </div>
             ))}
           </div>
