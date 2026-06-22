@@ -11,6 +11,32 @@ const ACCEPTED_TYPES = new Set(["image/jpeg", "image/png", "image/webp"]);
 const MAX_FILE_SIZE = 4 * 1024 * 1024;
 const OPENAI_TIMEOUT_MS = 45_000;
 
+// Garde-fou anti-abus : rate-limit par IP (chaque scan = 1 appel OpenAI payant).
+// In-memory (par instance serverless) = v1 ; à renforcer (Upstash/auth) avant
+// de scaler. Suffisant au stade actuel pour éviter qu'un bot spamme la facture.
+const RL_MAX = 5; // requêtes
+const RL_WINDOW_MS = 10 * 60 * 1000; // par 10 min
+const rlGlobal = globalThis as typeof globalThis & { skinRl?: Map<string, number[]> };
+const rlStore = rlGlobal.skinRl ?? new Map<string, number[]>();
+rlGlobal.skinRl = rlStore;
+
+function clientIp(request: Request): string {
+  const xff = request.headers.get("x-forwarded-for");
+  return (xff?.split(",")[0].trim()) || request.headers.get("x-real-ip") || "unknown";
+}
+
+function rateLimited(ip: string): boolean {
+  const now = Date.now();
+  const hits = (rlStore.get(ip) ?? []).filter((t) => now - t < RL_WINDOW_MS);
+  if (hits.length >= RL_MAX) {
+    rlStore.set(ip, hits);
+    return true;
+  }
+  hits.push(now);
+  rlStore.set(ip, hits);
+  return false;
+}
+
 export const runtime = "nodejs";
 export const maxDuration = 60;
 
@@ -56,6 +82,10 @@ function formatSkinProfile(input: FormDataEntryValue | null) {
 }
 
 export async function POST(request: Request) {
+  if (rateLimited(clientIp(request))) {
+    return jsonError("rate_limited", 429);
+  }
+
   let formData: FormData;
 
   try {

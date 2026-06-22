@@ -5,6 +5,14 @@ import NextImage from "next/image";
 import { motion, useSpring, useTransform, useInView } from "motion/react";
 import { Button } from "@/components/ui";
 import type { SkinProfile } from "@/lib/skin-profile";
+import { type ScanResult, CONCERN_LABEL, CONCERN_COLOR, SKIN_TYPE_LABEL } from "@/lib/scan-result";
+
+const ZONE_DEFS = [
+  ["forehead", "Front"],
+  ["t_zone", "Zone T"],
+  ["cheeks", "Joues"],
+  ["texture", "Texture"],
+] as const;
 
 /* Rapport d'analyse après scan — version skincare claire et respirable.
    Fond plus clair que le background, marges généreuses, sections bien
@@ -34,9 +42,19 @@ function AnimatedNumber({ value }: { value: number }) {
   return <motion.span ref={ref}>{display}</motion.span>;
 }
 
-export function SkinReportCard({ onSeePlan, profile }: { onSeePlan: () => void; profile?: SkinProfile | null }) {
-  const priority = profile?.priority ?? "Hydratation + barrière";
-  const priorityNote = profile?.priorityNote ?? "Ta peau semble surtout demander plus de régularité sur l'hydratation.";
+export function SkinReportCard({ onSeePlan, profile, result }: { onSeePlan: () => void; profile?: SkinProfile | null; result?: ScanResult | null }) {
+  // Vrai diagnostic image prioritaire ; sinon profil dérivé des réponses.
+  const priority = result ? CONCERN_LABEL[result.top_priority] : profile?.priority ?? "Hydratation + barrière";
+  const priorityNote = result?.summary ?? profile?.priorityNote ?? "Ta peau semble surtout demander plus de régularité sur l'hydratation.";
+  const chipLabel = (result && SKIN_TYPE_LABEL[result.skin_type]) || "Peau mixte";
+  const zones = result?.zones
+    ? ZONE_DEFS
+        .map(([k, label]) => {
+          const z = result.zones![k];
+          return { zone: label, obs: z.observation, color: z.concern ? CONCERN_COLOR[z.concern] : "#9aa39f" };
+        })
+        .filter((z) => z.obs)
+    : ZONES;
   return (
     <div
       className="mx-auto w-full max-w-md overflow-hidden rounded-3xl border border-white/10"
@@ -50,7 +68,7 @@ export function SkinReportCard({ onSeePlan, profile }: { onSeePlan: () => void; 
         <NextImage src="/faces/face-03.png" alt="" fill priority sizes="448px"
           style={{ objectFit: "cover", objectPosition: "50% 26%" }} />
         <div className="absolute inset-0" style={{ background: "linear-gradient(180deg, transparent 55%, #1a201e 100%)" }} />
-        <span className="absolute bottom-3 left-5 rounded-full bg-black/40 px-3 py-1 text-[0.72rem] font-semibold text-white backdrop-blur-md">Peau mixte</span>
+        <span className="absolute bottom-3 left-5 rounded-full bg-black/40 px-3 py-1 text-[0.72rem] font-semibold text-white backdrop-blur-md">{chipLabel}</span>
       </div>
 
       <div className="space-y-6 p-6">
@@ -92,7 +110,7 @@ export function SkinReportCard({ onSeePlan, profile }: { onSeePlan: () => void; 
         <div>
           <h3 className="text-[1.05rem] font-semibold text-white">Zones observées</h3>
           <div className="mt-4 space-y-3.5">
-            {ZONES.map((z) => (
+            {zones.map((z) => (
               <div key={z.zone} className="flex items-baseline gap-3">
                 <span className="mt-1.5 h-2 w-2 shrink-0 rounded-full" style={{ background: z.color }} />
                 <span className="w-[68px] shrink-0 text-[0.98rem] font-semibold text-white">{z.zone}</span>
