@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { CinematicScene } from "@/components/landing/CinematicScene";
 import { Reviews } from "@/components/landing/Reviews";
@@ -19,7 +19,6 @@ const STEPS = [
 export default function LandingV2Page() {
   const router = useRouter();
   const scan = () => router.push("/v2/scan");
-  const [ready, setReady] = useState(false);
 
   // Returning user (déjà onboardé) → on saute la cinématique et on va
   // direct au scan. ?reset=1 réinitialise (pratique pour tester).
@@ -27,17 +26,10 @@ export default function LandingV2Page() {
     const params = new URLSearchParams(window.location.search);
     if (params.get("reset") === "1") {
       resetOnboarded();
-      setReady(true);
       return;
     }
-    if (isOnboarded()) {
-      router.replace("/v2/scan");
-      return;
-    }
-    setReady(true);
+    if (isOnboarded()) router.replace("/v2/scan");
   }, [router]);
-
-  if (!ready) return null;
 
   return (
     <>
