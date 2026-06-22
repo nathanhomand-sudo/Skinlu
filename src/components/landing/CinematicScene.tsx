@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef } from "react";
+import { useEffect, useLayoutEffect, useRef } from "react";
 import NextImage from "next/image";
 import { gsap } from "gsap";
 import { ScrollTrigger } from "gsap/ScrollTrigger";
@@ -9,6 +9,11 @@ import { Button } from "@/components/ui";
 if (typeof window !== "undefined") {
   gsap.registerPlugin(ScrollTrigger);
 }
+
+// Cleanup GSAP synchrone AVANT le démontage React : sinon le pin-spacer
+// de ScrollTrigger reste dans le DOM et React plante au removeChild lors
+// de la navigation ("NotFoundError: The object can not be found here").
+const useIsoLayoutEffect = typeof window !== "undefined" ? useLayoutEffect : useEffect;
 
 /* Architecture reprise du composant 21st.dev "Cinematic landing Hero"
    (easemize) — scène unique pinnée au scroll : hero → la carte monte et
@@ -104,16 +109,25 @@ const STYLES = `
   .cs-cue-travel { animation: cs-cue-line 2s ease-in-out infinite; }
   @keyframes cs-pin { 0% { box-shadow: 0 0 0 0 rgba(94,234,212,.5), 0 0 8px rgba(255,255,255,.9); } 70% { box-shadow: 0 0 0 9px rgba(94,234,212,0), 0 0 8px rgba(255,255,255,.9); } 100% { box-shadow: 0 0 0 0 rgba(94,234,212,0), 0 0 8px rgba(255,255,255,.9); } }
   .cs-pindot { animation: cs-pin 2.2s ease-out infinite; }
+  @keyframes cs-cta-bounce {
+    0%,100% { transform: translateY(0); box-shadow: 0 6px 18px rgba(15,107,95,.5); }
+    50% { transform: translateY(-4px); box-shadow: 0 12px 26px rgba(27,174,154,.85); }
+  }
+  .cs-phone-cta { animation: cs-cta-bounce 1.4s ease-in-out infinite; }
+  .cs-phone-cta:active { transform: scale(0.97); }
 
-  /* Fallback statique (prefers-reduced-motion) — pile verticale lisible */
-  .cs-root.cs-reduced { height: auto; min-height: 100vh; overflow: visible; display: block; }
-  .cs-reduced .cs-reveal { visibility: visible; }
-  .cs-reduced .hero-text-wrapper { position: relative; padding: 7rem 1rem 1rem; }
-  .cs-reduced .cta-wrapper { position: relative; padding: 4rem 1rem 7rem; }
-  .cs-reduced .main-card { position: relative !important; transform: none !important; width: min(1080px,92vw) !important; height: auto !important; border-radius: 36px !important; margin: 2rem auto; }
+  /* Fallback statique (prefers-reduced-motion) — pile verticale lisible.
+     La carte garde une hauteur d'écran (ses enfants sont en position
+     absolue : height:auto l'effondrait → écran "vide / fond seul"). */
+  .cs-root.cs-reduced { height: auto !important; min-height: auto; overflow: visible; display: block; }
+  .cs-reduced .cs-reveal { visibility: visible !important; }
+  .cs-reduced .scroll-cue { display: none !important; }
+  .cs-reduced .hero-text-wrapper { position: relative !important; inset: auto !important; transform: none !important; opacity: 1 !important; min-height: 88vh; padding: 1rem; }
+  .cs-reduced .cta-wrapper { position: relative !important; inset: auto !important; transform: none !important; filter: none !important; opacity: 1 !important; min-height: 70vh; padding: 2rem 1rem; }
+  .cs-reduced .main-card { position: relative !important; inset: auto !important; transform: none !important; width: 100% !important; height: 100vh !important; border-radius: 0 !important; opacity: 1 !important; }
 
   @media (prefers-reduced-motion: reduce) {
-    .cs-scanline, .cs-cue-chevron, .cs-cue-travel, .cs-pindot { animation: none; }
+    .cs-scanline, .cs-cue-chevron, .cs-cue-travel, .cs-pindot, .cs-phone-cta { animation: none; }
   }
 `;
 
@@ -152,8 +166,9 @@ export function CinematicScene({ onScanClick, ctaLabel = "Scanner ma peau gratui
     };
   }, []);
 
-  // Timeline cinématique pinnée
-  useEffect(() => {
+  // Timeline cinématique pinnée — useLayoutEffect pour que le cleanup
+  // (revert du pin) s'exécute AVANT que React détache le DOM.
+  useIsoLayoutEffect(() => {
     const reduced = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
     if (reduced) {
       rootRef.current?.classList.add("cs-reduced");
@@ -178,7 +193,9 @@ export function CinematicScene({ onScanClick, ctaLabel = "Scanner ma peau gratui
         scrollTrigger: {
           trigger: rootRef.current,
           start: "top top",
-          end: "+=7000",
+          // Longueur totale du scroll pinné. Plus bas = scène plus rapide /
+          // funnel plus court (priorité mobile / TikTok : atteindre le CTA vite).
+          end: "+=1500",
           pin: true,
           scrub: 1,
           anticipatePin: 1,
@@ -198,7 +215,7 @@ export function CinematicScene({ onScanClick, ctaLabel = "Scanner ma peau gratui
         .fromTo(".floating-badge", { y: 100, autoAlpha: 0, scale: 0.7, rotationZ: -8 }, { y: 0, autoAlpha: 1, scale: 1, rotationZ: 0, ease: "back.out(1.5)", duration: 1.4, stagger: 0.18 }, "-=2.0")
         .fromTo(".card-left-text", { x: -50, autoAlpha: 0 }, { x: 0, autoAlpha: 1, ease: "power4.out", duration: 1.4 }, "-=1.4")
         .fromTo(".card-right-text", { x: 50, autoAlpha: 0, scale: 0.85 }, { x: 0, autoAlpha: 1, scale: 1, ease: "expo.out", duration: 1.4 }, "<")
-        .to({}, { duration: 2.5 })
+        .to({}, { duration: 1.2 })
         // Sortie propre : le contenu de la scène s'efface, la carte se fond
         // (PAS de rétrécissement — l'inset-0 se contractait vers le coin
         // haut-gauche et laissait une carte fantôme), puis le CTA apparaît
@@ -213,7 +230,12 @@ export function CinematicScene({ onScanClick, ctaLabel = "Scanner ma peau gratui
         .to({}, { duration: 1 });
     }, rootRef);
 
-    return () => ctx.revert();
+    return () => {
+      // Tuer les ScrollTriggers + revert (retire le pin-spacer) avant
+      // que React ne démonte, sinon removeChild plante à la navigation.
+      ScrollTrigger.getAll().forEach((t) => t.kill());
+      ctx.revert();
+    };
   }, []);
 
   return (
@@ -278,7 +300,7 @@ export function CinematicScene({ onScanClick, ctaLabel = "Scanner ma peau gratui
 
           {/* Téléphone central, devant le wordmark */}
           <div className="mockup-scroll-wrapper cs-reveal absolute inset-0 z-20 flex items-center justify-center" style={{ perspective: "1200px" }}>
-            <div className="relative scale-[0.82] sm:scale-90 lg:scale-100">
+            <div className="relative scale-[0.86] sm:scale-95 lg:scale-100">
               <div ref={mockupRef} className="cs-bezel relative h-[540px] w-[266px] rounded-[2.85rem] [transform-style:preserve-3d]">
                 {/* Boutons hardware */}
                 <span className="cs-hwbtn absolute -left-[2px] top-[112px] h-[26px] w-[3px] rounded-l-sm" />
@@ -294,15 +316,16 @@ export function CinematicScene({ onScanClick, ctaLabel = "Scanner ma peau gratui
                   {/* ── ÉCRAN RÉSULTAT (ce que l'utilisateur verra) ──
                       Inspiré de la réf : header net + photo hero + cartes
                       espacées. Zones en liste, jamais ancrées sur le visage. */}
-                  <div className="flex min-h-0 flex-1 flex-col px-3.5 pb-3.5 pt-[42px]">
-                    {/* Header app */}
-                    <div className="flex shrink-0 items-center justify-between pb-2.5">
-                      <div className="grid gap-0.5">
-                        <span className="text-[0.44rem] font-bold uppercase tracking-[0.18em] text-white/40">Ton analyse</span>
-                        <span className="font-display text-[1rem] font-bold leading-none tracking-tight text-white">Ta peau</span>
-                      </div>
-                      <span className="flex shrink-0 items-center gap-1 rounded-full bg-emerald-400/15 px-1.5 py-1 text-[0.46rem] font-bold text-emerald-300">
-                        <svg className="h-2 w-2" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3.5" aria-hidden><path d="M5 13l4 4L19 7" strokeLinecap="round" strokeLinejoin="round" /></svg>
+                  {/* Safe area en style inline (les valeurs arbitraires pt-[..]
+                      ne s'appliquaient pas de façon fiable). Padding-top large
+                      sous l'island, marges latérales pour ne jamais toucher
+                      les bords arrondis. */}
+                  <div className="flex min-h-0 flex-1 flex-col" style={{ padding: "54px 18px 16px" }}>
+                    {/* Header compact : "Analyse" à gauche, "Terminé" à droite */}
+                    <div className="flex shrink-0 items-center justify-between pb-3">
+                      <span className="text-[0.52rem] font-bold uppercase tracking-[0.24em] text-white/45">Analyse</span>
+                      <span className="flex shrink-0 items-center gap-1 whitespace-nowrap rounded-full bg-emerald-400/15 px-2 py-1 text-[0.5rem] font-bold text-emerald-300">
+                        <svg className="h-2.5 w-2.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3.5" aria-hidden><path d="M5 13l4 4L19 7" strokeLinecap="round" strokeLinejoin="round" /></svg>
                         Terminé
                       </span>
                     </div>
@@ -362,12 +385,13 @@ export function CinematicScene({ onScanClick, ctaLabel = "Scanner ma peau gratui
                         </div>
                       </div>
 
-                      {/* CTA — ancre le bas de l'écran */}
-                      <button type="button" tabIndex={-1}
-                        className="mt-1 flex h-9 w-full items-center justify-center gap-1.5 rounded-full text-[0.66rem] font-bold text-white"
-                        style={{ background: "linear-gradient(135deg, #0F6B5F, #14897A)", boxShadow: "0 6px 16px rgba(15,107,95,.4)" }}>
-                        <svg className="h-3 w-3" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" aria-hidden><rect x="5" y="11" width="14" height="9" rx="2" /><path d="M8 11V7a4 4 0 1 1 8 0v4" strokeLinecap="round" /></svg>
-                        Voir mon plan complet
+                      {/* CTA principal DANS l'écran — saute légèrement pour
+                          signaler qu'on peut cliquer ; lance le scan */}
+                      <button type="button" onClick={onScanClick}
+                        className="cs-phone-cta mt-1 flex h-10 w-full items-center justify-center gap-1.5 rounded-full text-[0.74rem] font-bold text-white"
+                        style={{ background: "linear-gradient(135deg, #14897A, #1BAE9A)" }}>
+                        <svg className="h-3.5 w-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" aria-hidden><path d="M3 9V7a2 2 0 0 1 2-2h2M17 5h2a2 2 0 0 1 2 2v2M21 15v2a2 2 0 0 1-2 2h-2M7 19H5a2 2 0 0 1-2-2v-2" strokeLinecap="round" /><circle cx="12" cy="12" r="3" /></svg>
+                        Commencer mon scan
                       </button>
                     </div>
                   </div>
@@ -393,13 +417,6 @@ export function CinematicScene({ onScanClick, ctaLabel = "Scanner ma peau gratui
                 </div>
               </div>
 
-              <div className="floating-badge cs-badge absolute -bottom-6 left-1/2 z-40 flex w-[200px] -translate-x-1/2 items-center justify-between rounded-2xl px-4 py-2.5">
-                <div className="grid gap-0.5">
-                  <span className="text-[0.52rem] font-bold uppercase tracking-[0.1em] text-white/45">Suivi</span>
-                  <span className="text-[0.76rem] font-semibold text-white">Prochain scan · J+14</span>
-                </div>
-                <span className="text-emerald-300" aria-hidden>→</span>
-              </div>
             </div>
           </div>
 
