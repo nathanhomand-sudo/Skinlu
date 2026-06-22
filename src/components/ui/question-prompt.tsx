@@ -117,9 +117,9 @@ export function QuestionPrompt({
   if (!activeQuestion) return null;
 
   return (
-    <div className="flex flex-1 flex-col">
-      {/* Titre + options en haut (sous la barre), pas centrés */}
-      <div className="pt-7">
+    <div className="flex min-h-0 flex-1 flex-col">
+      {/* Titre + options en haut ; ce bloc grandit pour pousser le bouton en bas */}
+      <div className="flex-1 pt-7">
         <h2 className="font-display text-[clamp(1.5rem,5vw,2rem)] font-bold leading-tight text-white">
           {activeQuestion.title}
         </h2>
@@ -187,8 +187,8 @@ export function QuestionPrompt({
         )}
       </div>
 
-      {/* Continuer — collé en bas */}
-      <div className="mt-auto shrink-0 pt-8">
+      {/* Continuer — poussé en bas par le bloc flex-1 au-dessus */}
+      <div className="shrink-0 pt-8">
         <button
           type="button"
           onClick={handleSubmit}
