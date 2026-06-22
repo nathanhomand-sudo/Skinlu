@@ -1,3 +1,72 @@
+/* ─── Tailwind v4 — utilities only, no preflight ──────────────
+   On garde le reset existant ci-dessous comme seule source de
+   vérité pour le rendu de base ; Tailwind n'apporte que des
+   utilitaires + les tokens définis dans @theme.
+
+   Ordre de priorité des layers (du plus faible au plus fort) :
+   theme < legacy-reset < utilities. "legacy-reset" contient les
+   quelques sélecteurs globaux historiques (h1/h2/h3, button/input)
+   qui sinon — étant hors layer — gagneraient TOUJOURS face aux
+   utilitaires Tailwind, même avec des classes explicites. Les
+   mettre dans un layer nommé, déclaré avant "utilities", ne change
+   rien là où aucune classe Tailwind n'est utilisée (comportement
+   identique partout ailleurs sur le site) ; ça laisse seulement
+   les nouveaux composants Tailwind appliquer leurs propres styles. */
+@layer theme, legacy-reset, utilities;
+@import "tailwindcss/theme.css" layer(theme);
+@import "tailwindcss/utilities.css" layer(utilities);
+
+@theme {
+  /* Couleurs — alias des tokens historiques ci-dessous, pas de
+     valeurs dupliquées en dur */
+  --color-bg-main: var(--bg-main);
+  --color-bg-alt: var(--bg-alt);
+  --color-accent: var(--accent);
+  --color-accent-hover: var(--accent-hover);
+  --color-rose: var(--rose);
+  --color-ink: var(--ink);
+  --color-text-primary: var(--text-primary);
+  --color-text-secondary: var(--text-secondary);
+  --color-quiet: var(--quiet);
+  --color-border: var(--border);
+  --color-border-strong: var(--border-strong);
+  --color-surface: var(--surface);
+  --color-surface-hi: var(--surface-hi);
+  --color-danger: var(--danger);
+
+  /* Palette "concern" — formalise ce qui n'existait jusqu'ici
+     que dans .concern-badge--* avec des rgba() dupliqués */
+  --color-concern-acne: var(--rose);
+  --color-concern-acne-ink: #953B2B;
+  --color-concern-sensitivity: var(--rose);
+  --color-concern-sensitivity-ink: #923830;
+  --color-concern-dark-spots: #C49A4A;
+  --color-concern-dark-spots-ink: #74520E;
+  --color-concern-aging: #8C6EBE;
+  --color-concern-aging-ink: #5A3E9C;
+  --color-concern-dullness: var(--accent);
+  --color-concern-dehydration: #4682C3;
+  --color-concern-dehydration-ink: #245C8A;
+  --color-concern-pores: var(--text-secondary);
+
+  /* Typo — les variables --font-inter / --font-fraunces sont
+     injectées par next/font dans layout.tsx */
+  --font-sans: var(--font-inter), Inter, Arial, Helvetica, sans-serif;
+  --font-display: var(--font-fraunces), Fraunces, Georgia, serif;
+
+  /* Radius — échelle consolidée à partir des valeurs existantes */
+  --radius-sm: 8px;
+  --radius-md: 12px;
+  --radius-lg: 16px;
+  --radius-xl: 20px;
+  --radius-2xl: 28px;
+
+  /* Shadows — 3 niveaux couvrant card / élévation / bouton CTA */
+  --shadow-soft: 0 6px 20px rgba(16, 23, 21, 0.10), 0 2px 6px rgba(16, 23, 21, 0.06);
+  --shadow-elevated: 0 22px 60px rgba(16, 23, 21, 0.16), 0 4px 14px rgba(16, 23, 21, 0.08);
+  --shadow-cta: 0 6px 22px rgba(208, 131, 115, 0.32), 0 2px 6px rgba(0, 0, 0, 0.1);
+}
+
 /* ─── Design tokens ─────────────────────────────────────────── */
 :root {
   --bg-main:        #F8F6F1;
@@ -34,7 +103,12 @@ body {
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
 }
-button, input { font: inherit; }
+/* button/input "font: inherit" doit pouvoir être dépassé par les
+   utilitaires Tailwind (font-weight, font-family...) sur les
+   nouveaux composants — voir layer "legacy-reset" plus haut. */
+@layer legacy-reset {
+  button, input { font: inherit; }
+}
 button { -webkit-tap-highlight-color: transparent; }
 a { color: inherit; }
 
@@ -43,7 +117,25 @@ a { color: inherit; }
 .container { width: min(100% - 40px, 1160px); margin: 0 auto; }
 
 /* ─── Typography ─────────────────────────────────────────────── */
-h1, h2, h3,
+/* h1/h2/h3 nus dans un layer pour laisser les utilitaires Tailwind
+   (text-4xl, font-bold...) s'appliquer sur les nouveaux composants
+   — voir layer "legacy-reset" plus haut. Les sélecteurs composés
+   ci-dessous (.section-heading h2 etc.) restent hors layer, sans
+   changement de comportement. */
+@layer legacy-reset {
+  h1, h2, h3 {
+    font-family: var(--font-fraunces), Fraunces, Georgia, serif;
+    letter-spacing: 0;
+  }
+  h1 {
+    color: var(--text-primary);
+    font-size: clamp(3.2rem, 18vw, 7rem);
+    font-weight: 650;
+    line-height: 0.84;
+  }
+  h1 span { color: var(--accent); }
+}
+
 .hero-benefit,
 .section-heading h2,
 .split-copy h2,
@@ -55,14 +147,6 @@ h1, h2, h3,
   font-family: var(--font-fraunces), Fraunces, Georgia, serif;
   letter-spacing: 0;
 }
-
-h1 {
-  color: var(--text-primary);
-  font-size: clamp(3.2rem, 18vw, 7rem);
-  font-weight: 650;
-  line-height: 0.84;
-}
-h1 span { color: var(--accent); }
 
 .hero-benefit {
   max-width: 640px;
@@ -4199,3 +4283,282 @@ h1 span { color: var(--accent); }
   color: var(--text-secondary);
 }
 .history-empty p { font-size: 0.95rem; }
+
+/* ═══════════════════════════════════════════════════════════════
+   V3 — AHA / SECTION RÉSULTAT, RESTYLE PREMIUM (CSS uniquement)
+   Aucun changement de markup/JSX/logique — uniquement les classes
+   déjà existantes dans page.tsx. Direction : "Cal.ai" — calme,
+   lisible, photo au centre, résultat net, routine ensuite.
+   ═══════════════════════════════════════════════════════════════ */
+
+.upload-panel,
+.result-panel {
+  border-radius: 22px;
+  padding: 1.85rem;
+  gap: 1.4rem;
+  box-shadow: 0 8px 28px rgba(16, 23, 21, 0.07);
+}
+
+.panel-heading {
+  margin-bottom: 0.15rem;
+}
+
+/* Photo au centre : plus grande, plus respirée */
+.annotated-selfie {
+  height: 400px;
+  border-radius: 18px;
+}
+@media (max-width: 479px) {
+  .annotated-selfie { height: 320px; }
+}
+
+/* Le résultat principal devient le point focal calme de la carte */
+.debrief-summary,
+.preview-summary {
+  font-size: 1.1rem;
+  line-height: 1.6;
+  padding: 1.1rem 1.35rem;
+  border-radius: 16px;
+  margin-bottom: 0.25rem;
+}
+
+/* Stat cards : plus d'air, moins de densité */
+.preview-cards {
+  gap: 0.65rem;
+}
+.preview-card {
+  border-radius: 16px;
+  padding: 1.15rem;
+  min-height: 128px;
+  gap: 0.55rem;
+}
+.preview-card span {
+  font-size: 0.66rem;
+}
+.preview-card strong {
+  font-size: 1.02rem;
+  line-height: 1.25;
+}
+
+/* Liste de zones : moins "tableau dev", plus carte lisible */
+.debrief-zone-list {
+  border-radius: 16px;
+}
+.debrief-zone-row {
+  padding: 0.65rem 0.9rem;
+}
+
+/* Confiance : barre plus visible, respiration au-dessus */
+.confidence-row {
+  gap: 0.5rem;
+  margin-top: 0.25rem;
+}
+.confidence-bar-outer {
+  height: 6px;
+}
+
+/* Routine verrouillée : carte plus calme */
+.routine-blur-teaser {
+  border-radius: 18px;
+}
+.rbt-rows {
+  padding: 1.25rem;
+}
+
+/* Paywall : carte la plus "premium" de la section, plus d'air */
+.paywall-block {
+  border-radius: 20px;
+  padding: 1.6rem;
+  gap: 1rem;
+}
+.paywall-title {
+  font-size: 1.35rem;
+}
+.paywall-deliverables {
+  gap: 0.6rem;
+}
+
+@media (min-width: 760px) {
+  .upload-panel,
+  .result-panel {
+    padding: 2.25rem;
+  }
+  .annotated-selfie {
+    height: 460px;
+  }
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   DA sombre — scoping additif, ne touche pas aux tokens :root
+   (utilisés aussi par les pages légales). Deux scopes :
+   - .v2-dark   : composants /v2, basés sur les classes Tailwind
+                  générées depuis @theme (bg-bg-main, text-text-primary…).
+                  Tailwind v4 résout `--color-bg-main: var(--bg-main)`
+                  en valeur statique à la compilation (lightningcss) —
+                  l'indirection ne reste pas "vivante" au runtime, donc
+                  on surcharge directement les `--color-*` consommés
+                  par les utilitaires plutôt que leurs alias --bg-main.
+   - .skinlu-dark : page réelle (src/app/page.tsx), CSS legacy écrit à
+                  la main qui référence `var(--bg-main)` etc. directement
+                  (pas de couche Tailwind) — là, surcharger --bg-main
+                  fonctionne normalement. Quelques rgba() blancs/crème
+                  codés en dur (cartes, overlays) sont surchargés
+                  explicitement plus bas.
+   ═══════════════════════════════════════════════════════════════ */
+/* body lives outside these scopes (they wrap content as a child) —
+   without this, an overscroll bounce or short page can flash the
+   light :root body background through the edges. */
+html:has(body .skinlu-dark),
+html:has(body .v2-dark),
+body:has(.skinlu-dark),
+body:has(.v2-dark) {
+  background: #0B0C0D;
+}
+.v2-dark {
+  --color-bg-main: #0B0C0D;
+  --color-bg-alt: #0A0A0B;
+  --color-accent-hover: #14897A;
+  --color-text-primary: #F5F6F5;
+  --color-text-secondary: rgba(255, 255, 255, 0.55);
+  --color-border: rgba(255, 255, 255, 0.10);
+  --color-border-strong: rgba(255, 255, 255, 0.20);
+  --color-surface: #14171A;
+  --color-surface-hi: #1A1D20;
+  --color-concern-dehydration-ink: #BFD9EE;
+  --shadow-soft: 0 10px 20px rgba(0, 0, 0, 0.35), inset 0 1px 1px rgba(255, 255, 255, 0.05), inset 0 -1px 1px rgba(0, 0, 0, 0.5);
+  --shadow-elevated: 0 25px 50px -12px rgba(0, 0, 0, 0.8), inset 0 1px 1px rgba(255, 255, 255, 0.08), inset 0 -1px 1px rgba(0, 0, 0, 0.5);
+  background: #0B0C0D;
+}
+.skinlu-dark {
+  --bg-main: #0B0C0D;
+  --bg-alt: #0A0A0B;
+  --accent-hover: #14897A;
+  --ink: #F5F6F5;
+  --text-primary: #F5F6F5;
+  --text-secondary: rgba(255, 255, 255, 0.55);
+  --border: rgba(255, 255, 255, 0.10);
+  --border-strong: rgba(255, 255, 255, 0.20);
+  --surface: #14171A;
+  --surface-hi: #1A1D20;
+  --background: #0B0C0D;
+  --text: #F5F6F5;
+  --muted: rgba(255, 255, 255, 0.55);
+  --quiet: rgba(255, 255, 255, 0.4);
+  --line: rgba(255, 255, 255, 0.10);
+  --line-strong: rgba(255, 255, 255, 0.20);
+  --cream: #1A1D20;
+  --color-concern-dehydration-ink: #BFD9EE;
+  background: var(--bg-main);
+}
+
+/* ── page.tsx : cartes/overlays codés en rgba() blanc/crème, non
+   token-based — surcharge explicite (le reste suit via les tokens
+   ci-dessus). ── */
+.skinlu-dark .site-nav {
+  background: rgba(8, 9, 10, 0.86);
+}
+.skinlu-dark .analysis-overlay {
+  background: rgba(7, 8, 9, 0.88);
+}
+.skinlu-dark .ao-scan-card {
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.05), rgba(15, 107, 95, 0.18)),
+    rgba(10, 12, 13, 0.7);
+}
+.skinlu-dark .preview-card {
+  background: rgba(255, 255, 255, 0.04);
+}
+.skinlu-dark .upload-panel {
+  background:
+    linear-gradient(145deg, rgba(255, 255, 255, 0.04), rgba(255, 255, 255, 0.015)),
+    var(--surface);
+}
+.skinlu-dark .upload-panel .scan-cabin-cta {
+  background: linear-gradient(135deg, var(--accent), #102f2a);
+  color: #fff;
+}
+.skinlu-dark .upload-panel .scan-cabin-cta:hover:not(:disabled) {
+  background: linear-gradient(135deg, var(--accent-hover), #0d2622);
+}
+.skinlu-dark .result-panel {
+  background:
+    linear-gradient(145deg, rgba(255, 255, 255, 0.05), rgba(255, 255, 255, 0.015)),
+    var(--surface);
+}
+.skinlu-dark .result-panel .concern-list span {
+  background: rgba(255, 255, 255, 0.06);
+}
+/* Material depth pass — cartes plates -> verre/profondeur, cohérent
+   avec le Hero/PhoneMockup (gradient haut clair + ombres internes). */
+.skinlu-dark .testimonial-card,
+.skinlu-dark .compare-col,
+.skinlu-dark .paywall-block,
+.skinlu-dark .preview-card,
+.skinlu-dark .upload-panel,
+.skinlu-dark .result-panel {
+  background-image: linear-gradient(180deg, rgba(255, 255, 255, 0.04), rgba(255, 255, 255, 0.01));
+  box-shadow: 0 10px 20px rgba(0, 0, 0, 0.35), inset 0 1px 1px rgba(255, 255, 255, 0.05), inset 0 -1px 1px rgba(0, 0, 0, 0.5);
+}
+.skinlu-dark .compare-col--hero {
+  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.8), inset 0 1px 1px rgba(255, 255, 255, 0.08), inset 0 -1px 1px rgba(0, 0, 0, 0.5);
+}
+.skinlu-dark .pms-topbar b {
+  background: rgba(15, 107, 95, 0.14);
+}
+.skinlu-dark .rbt-overlay {
+  background: rgba(8, 9, 10, 0.78);
+}
+.skinlu-dark .rbt-lock-badge {
+  background: rgba(255, 255, 255, 0.08);
+}
+.skinlu-dark .mobile-paywall-sticky {
+  background: rgba(8, 9, 10, 0.9);
+}
+.skinlu-dark .arc-section,
+.skinlu-dark .compare-section {
+  background: var(--bg-alt);
+}
+.skinlu-dark .immersive-overlay {
+  background:
+    linear-gradient(to bottom, rgba(8, 9, 10, 0.5) 0%, transparent 28%),
+    linear-gradient(to top, rgba(8, 9, 10, 0.95) 0%, rgba(8, 9, 10, 0.45) 40%, transparent 66%);
+}
+
+/* ── /v2 ScanMockup — sweep de scan continu sur l'écran du téléphone ── */
+@keyframes scanline-sweep {
+  0% { top: 10%; opacity: 0; }
+  15% { opacity: 1; }
+  85% { opacity: 1; }
+  100% { top: 88%; opacity: 0; }
+}
+.scanline-sweep {
+  animation: scanline-sweep 2.6s ease-in-out infinite;
+}
+@media (prefers-reduced-motion: reduce) {
+  .scanline-sweep { animation: none; opacity: 0; }
+}
+
+/* ── Matériaux repris du composant de référence (cinematic-hero, 21st.dev) —
+   classes réelles et réutilisables au lieu de styles inline dupliqués
+   à chaque endroit. Utilisées par PhoneMockup.tsx et Hero.tsx. ── */
+.widget-depth {
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.04) 0%, rgba(255, 255, 255, 0.01) 100%);
+  box-shadow:
+    0 10px 20px rgba(0, 0, 0, 0.3),
+    inset 0 1px 1px rgba(255, 255, 255, 0.05),
+    inset 0 -1px 1px rgba(0, 0, 0, 0.5);
+  border: 1px solid rgba(255, 255, 255, 0.03);
+}
+.floating-ui-badge {
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.08) 0%, rgba(255, 255, 255, 0.01) 100%);
+  backdrop-filter: blur(24px);
+  -webkit-backdrop-filter: blur(24px);
+  box-shadow:
+    0 0 0 1px rgba(255, 255, 255, 0.1),
+    0 25px 50px -12px rgba(0, 0, 0, 0.8),
+    inset 0 1px 1px rgba(255, 255, 255, 0.2),
+    inset 0 -1px 1px rgba(0, 0, 0, 0.5);
+}
+.screen-glare {
+  background: linear-gradient(110deg, rgba(255, 255, 255, 0.08) 0%, rgba(255, 255, 255, 0) 45%);
+}

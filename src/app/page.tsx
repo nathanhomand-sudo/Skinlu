@@ -19,6 +19,7 @@ import { getSupabaseBrowser } from "@/lib/supabase-client";
 import AuthGate from "@/components/AuthGate";
 import ProfileMenu from "@/components/ProfileMenu";
 import SkinScanCabin, { type SkinScanCabinHandle } from "@/components/SkinScanCabin";
+import { Hero } from "@/components/landing/Hero";
 import { track } from "@/lib/track";
 
 const ACCEPTED_TYPES = ["image/jpeg", "image/png", "image/webp"];
@@ -895,7 +896,7 @@ export default function Home() {
   }, []);
 
   return (
-    <main className={`site-shell ${diagnostic ? "has-result" : ""}`}>
+    <div className="skinlu-dark">
 
       {/* ── SCAN MODAL ───────────────────────────────────────────── */}
       {scanModalOpen && (
@@ -1015,74 +1016,18 @@ export default function Home() {
       </header>
 
       {/* ── 1. HERO ──────────────────────────────────────────────── */}
-      <section className="hero-section" aria-labelledby="product-title">
-        <div className="container hero-container">
+      {/* Rendered outside .site-shell on purpose: GSAP's ScrollTrigger
+          pin spacer breaks inside that flex column container (confirmed
+          via isolated test) and releases the pin early. */}
+      <Hero
+        ctaLabel={diagnostic ? "Voir mon analyse" : "Scanner ma peau gratuitement"}
+        onScanClick={handleHeroCta}
+      />
 
-          {/* Copy — first in DOM for a11y, shown below visual on mobile */}
-          <div className="hero-copy">
-            <div className="eyebrow hero-eyebrow">Skinlu = la fin du skincare au hasard</div>
-            <h1 id="product-title">Arrête d&apos;acheter ta skincare au hasard.</h1>
-            <p className="lead">
-              TikTok te montre quoi acheter. Skinlu t&apos;aide à savoir si ça a vraiment du sens pour toi.
-            </p>
-            <div className="trust-strip">
-              <span>Gratuit</span>
-              <span>30s</span>
-              <span>Compte gratuit</span>
-              <span>Analyse cosmétique indicative</span>
-            </div>
-            <p className="hero-microcopy">
-              Avant d&apos;acheter encore un produit viral, vérifie si ta peau en a vraiment besoin.
-            </p>
-            <button type="button" className="hero-cta" onClick={handleHeroCta}>
-              {diagnostic ? "Voir mon analyse" : "Scanner ma peau gratuitement"}
-            </button>
-          </div>
-
-          {/* Visual — portrait + floating cards UI */}
-          <div className="hero-visual" aria-hidden="true">
-            <div className="hero-portrait-wrap">
-              <NextImage src="/faces/hero-portrait.png" alt="" className="hero-face" fill priority sizes="(max-width: 768px) 100vw, 50vw" style={{ objectFit: "cover", objectPosition: "center 15%" }} />
-              <div className="hero-portrait-gradient" />
-            </div>
-
-            {/* Floating top-left: routine label */}
-            <div className="hero-float-card hero-float-top glass-card">
-              <span>Routine matin</span>
-              <strong>Cleanser · Sérum · SPF</strong>
-            </div>
-
-            {/* Floating bottom-right: diagnostic result */}
-            <div className="hero-float-card hero-float-diag glass-card">
-              <div className="hfd-header">
-                <span>Skinlu</span>
-                <b>Scan</b>
-              </div>
-              <div className="hfd-priority">
-                <small>Priorité cosmétique indicative</small>
-                <strong>Signes de déshydratation possible</strong>
-              </div>
-              <div className="hfd-metrics">
-                <div><span>Type probable</span><b>Mixte</b></div>
-                <div><span>Pores visibles</span><b>Visibles</b></div>
-                <div><span>Réactivité</span><b>À confirmer</b></div>
-              </div>
-              <div className="hfd-routine">
-                <span>Routine proposée</span>
-                <strong>Cleanser · Sérum · SPF</strong>
-              </div>
-              <div className="hfd-recommend">
-                <span>À vérifier</span>
-                <strong>Avant ton prochain achat</strong>
-              </div>
-            </div>
-          </div>
-
-        </div>
-      </section>
+      <main className={`site-shell ${diagnostic ? "has-result" : ""}`}>
 
       {/* ── 3. PHONE DEMO ────────────────────────────────────────── */}
-      <section className="phone-demo-section">
+      <section id="comment-ca-marche" className="phone-demo-section">
         <div className="container">
           <div className="phone-demo-layout">
             <div className="phone-demo-copy reveal">
@@ -1588,6 +1533,7 @@ export default function Home() {
         </div>
       </footer>
 
-    </main>
+      </main>
+    </div>
   );
 }
