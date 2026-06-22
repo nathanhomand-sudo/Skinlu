@@ -8,7 +8,7 @@ import { QuestionPrompt, type QuestionConfig, type QuestionAnswer } from "@/comp
 import { ScanCamera } from "@/components/landing/ScanCamera";
 import { isOnboarded, setOnboarded } from "@/lib/onboarding";
 import { saveProfile } from "@/lib/skin-profile";
-import { analyzePhoto, saveResult, clearResult } from "@/lib/scan-result";
+import { analyzePhoto, saveResult, savePhoto, clearResult } from "@/lib/scan-result";
 
 /* Briefing avant analyse — questions rendues par le composant QuestionPrompt
    (logique fournie : single/multi, badges A/B/C) restylé premium Skinlu.
@@ -63,9 +63,9 @@ export function ScanBriefing() {
   const goBack = () => (step === 0 ? setPhase("intro") : setStep((s) => s - 1));
 
   const capture = async (dataUrl?: string) => {
-    if (dataUrl) setShot(dataUrl);
     setAnalyzing(true);
     clearResult();
+    if (dataUrl) { setShot(dataUrl); savePhoto(dataUrl); }
     const labels = buildLabels();
     const minWait = new Promise((r) => setTimeout(r, 1500)); // durée mini de l'écran d'analyse
     // Analyse réelle de l'image (OpenAI Vision) ; si échec → fallback profil dérivé.

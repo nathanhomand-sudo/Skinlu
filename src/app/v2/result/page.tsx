@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 import { SkinReportCard } from "@/components/landing/SkinReportCard";
 import { resetOnboarded } from "@/lib/onboarding";
 import { loadProfile, type SkinProfile } from "@/lib/skin-profile";
-import { loadResult, type ScanResult } from "@/lib/scan-result";
+import { loadResult, loadPhoto, type ScanResult } from "@/lib/scan-result";
 
 // Rapport d'analyse après scan (démo /v2). "Voir mon plan complet" → "/"
 // (le vrai produit / paywall). Hérite du layout /v2 (scope .v2-dark).
@@ -13,7 +13,8 @@ export default function ScanResultPage() {
   const router = useRouter();
   const [profile, setProfile] = useState<SkinProfile | null>(null);
   const [result, setResult] = useState<ScanResult | null>(null);
-  useEffect(() => { setProfile(loadProfile()); setResult(loadResult()); }, []);
+  const [photo, setPhoto] = useState<string | null>(null);
+  useEffect(() => { setProfile(loadProfile()); setResult(loadResult()); setPhoto(loadPhoto()); }, []);
   return (
     <main className="relative flex min-h-screen flex-col items-center justify-center overflow-hidden px-5 py-16">
       <div
@@ -22,7 +23,7 @@ export default function ScanResultPage() {
         style={{ background: "radial-gradient(closest-side, rgba(15,107,95,.26), transparent)" }}
       />
       <div className="relative z-10 w-full">
-        <SkinReportCard profile={profile} result={result} onSeePlan={() => router.push("/")} />
+        <SkinReportCard profile={profile} result={result} photo={photo} onSeePlan={() => router.push("/")} />
         {/* Test démo : repasser en "1re visite" (réinitialise l'onboarding) */}
         <button
           type="button"

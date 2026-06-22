@@ -8,6 +8,7 @@ export type ScanZone = { observation: string; concern: Concern | null };
 export type ScanResult = {
   skin_type: string;
   top_priority: Concern;
+  concerns?: Concern[];
   summary: string;
   zones?: { forehead: ScanZone; cheeks: ScanZone; t_zone: ScanZone; texture: ScanZone } | null;
   confidence?: number | null;
@@ -24,6 +25,17 @@ export const CONCERN_LABEL: Record<Concern, string> = {
   sensitivity: "Apaisement + barrière",
   dullness: "Éclat + uniformité",
   enlarged_pores: "Pores visibles",
+};
+
+// Observations courtes pour l'écran AHA (max 2-3, pas de pavé).
+export const CONCERN_SHORT: Record<Concern, string> = {
+  acne: "Imperfections à surveiller",
+  dehydration: "Hydratation à renforcer",
+  dark_spots: "Taches à uniformiser",
+  aging: "Premiers signes de l'âge",
+  sensitivity: "Sensibilité à apaiser",
+  dullness: "Éclat à relancer",
+  enlarged_pores: "Pores plus visibles",
 };
 
 export const CONCERN_COLOR: Record<Concern, string> = {
@@ -76,12 +88,20 @@ export async function analyzePhoto(dataUrl: string, answers: string[][]): Promis
   }
 }
 
+const PHOTO_KEY = "skinlu_scan_photo";
+
 export function saveResult(r: ScanResult): void {
   try { window.sessionStorage.setItem(KEY, JSON.stringify(r)); } catch { /* ignore */ }
 }
 export function loadResult(): ScanResult | null {
   try { return JSON.parse(window.sessionStorage.getItem(KEY) ?? "null"); } catch { return null; }
 }
+export function savePhoto(dataUrl: string): void {
+  try { window.sessionStorage.setItem(PHOTO_KEY, dataUrl); } catch { /* ignore */ }
+}
+export function loadPhoto(): string | null {
+  try { return window.sessionStorage.getItem(PHOTO_KEY); } catch { return null; }
+}
 export function clearResult(): void {
-  try { window.sessionStorage.removeItem(KEY); } catch { /* ignore */ }
+  try { window.sessionStorage.removeItem(KEY); window.sessionStorage.removeItem(PHOTO_KEY); } catch { /* ignore */ }
 }

@@ -5,31 +5,12 @@ import NextImage from "next/image";
 import { motion, useSpring, useTransform, useInView } from "motion/react";
 import { Button } from "@/components/ui";
 import type { SkinProfile } from "@/lib/skin-profile";
-import { type ScanResult, CONCERN_LABEL, CONCERN_COLOR, SKIN_TYPE_LABEL } from "@/lib/scan-result";
+import { type ScanResult, CONCERN_SHORT, CONCERN_COLOR, SKIN_TYPE_LABEL } from "@/lib/scan-result";
+import type { Concern } from "@/lib/skin-diagnostic";
 
-const ZONE_DEFS = [
-  ["forehead", "Front"],
-  ["t_zone", "Zone T"],
-  ["cheeks", "Joues"],
-  ["texture", "Texture"],
-] as const;
-
-/* Rapport d'analyse après scan — version skincare claire et respirable.
-   Fond plus clair que le background, marges généreuses, sections bien
-   séparées, hiérarchie : score → priorité → zones → routine → CTA.
-   Lisible en 5 secondes, pas un dashboard noir compact. */
-
-const ZONES = [
-  { zone: "Zone T", obs: "brillance légère", color: "#0F6B5F" },
-  { zone: "Joues", obs: "déshydratation possible", color: "#4682C3" },
-  { zone: "Texture", obs: "pores visibles", color: "#9aa39f" },
-];
-
-const ROUTINE = [
-  { n: "1", name: "Nettoyant doux", when: "Matin & soir" },
-  { n: "2", name: "Sérum hydratant", when: "Matin & soir" },
-  { n: "3", name: "Crème + SPF 50", when: "Le matin" },
-];
+/* Écran AHA — minimal, façon Cal AI : photo hero, score, priorité,
+   2-3 observations courtes, CTA fort. Le détail (routine, zones complètes,
+   recommandations) vit DERRIÈRE le CTA/paywall, pas ici. */
 
 function AnimatedNumber({ value }: { value: number }) {
   const ref = React.useRef<HTMLSpanElement>(null);
@@ -42,106 +23,88 @@ function AnimatedNumber({ value }: { value: number }) {
   return <motion.span ref={ref}>{display}</motion.span>;
 }
 
-export function SkinReportCard({ onSeePlan, profile, result }: { onSeePlan: () => void; profile?: SkinProfile | null; result?: ScanResult | null }) {
-  // Vrai diagnostic image prioritaire ; sinon profil dérivé des réponses.
-  const priority = result ? CONCERN_LABEL[result.top_priority] : profile?.priority ?? "Hydratation + barrière";
-  const priorityNote = result?.summary ?? profile?.priorityNote ?? "Ta peau semble surtout demander plus de régularité sur l'hydratation.";
+const clamp = (n: number, lo: number, hi: number) => Math.max(lo, Math.min(hi, n));
+
+type Observation = { label: string; color: string };
+
+export function SkinReportCard({
+  onSeePlan,
+  profile,
+  result,
+  photo,
+}: {
+  onSeePlan: () => void;
+  profile?: SkinProfile | null;
+  result?: ScanResult | null;
+  photo?: string | null;
+}) {
   const chipLabel = (result && SKIN_TYPE_LABEL[result.skin_type]) || "Peau mixte";
-  const zones = result?.zones
-    ? ZONE_DEFS
-        .map(([k, label]) => {
-          const z = result.zones![k];
-          return { zone: label, obs: z.observation, color: z.concern ? CONCERN_COLOR[z.concern] : "#9aa39f" };
-        })
-        .filter((z) => z.obs)
-    : ZONES;
+  const priority = result ? CONCERN_SHORT[result.top_priority] : profile?.priority ?? "Hydratation + barrière";
+
+  // 2-3 observations courtes max (concerns détectés) — sinon dérivé.
+  const observations: Observation[] = result
+    ? Array.from(new Set([result.top_priority, ...(result.concerns ?? [])]))
+        .slice(0, 3)
+        .map((c: Concern) => ({ label: CONCERN_SHORT[c], color: CONCERN_COLOR[c] }))
+    : [{ label: profile?.priority ?? "Équilibre à affiner", color: "#0F6B5F" }];
+
+  const score = result ? clamp(94 - (result.concerns?.length ?? 1) * 9, 62, 94) : 82;
+
   return (
     <div
-      className="mx-auto w-full max-w-md overflow-hidden rounded-3xl border border-white/10"
-      style={{
-        background: "#1a201e",
-        boxShadow: "0 30px 70px -20px rgba(0,0,0,.7)",
-      }}
+      className="mx-auto w-full max-w-md overflow-hidden rounded-[2rem] border border-white/10"
+      style={{ background: "#13191a", boxShadow: "0 30px 80px -24px rgba(0,0,0,.75)" }}
     >
-      {/* Photo en haut */}
-      <div className="relative h-[200px] w-full">
-        <NextImage src="/faces/face-03.png" alt="" fill priority sizes="448px"
-          style={{ objectFit: "cover", objectPosition: "50% 26%" }} />
-        <div className="absolute inset-0" style={{ background: "linear-gradient(180deg, transparent 55%, #1a201e 100%)" }} />
-        <span className="absolute bottom-3 left-5 rounded-full bg-black/40 px-3 py-1 text-[0.72rem] font-semibold text-white backdrop-blur-md">{chipLabel}</span>
+      {/* Photo hero — structure le haut */}
+      <div className="relative h-[280px] w-full">
+        {photo ? (
+          // eslint-disable-next-line @next/next/no-img-element
+          <img src={photo} alt="" className="absolute inset-0 h-full w-full object-cover" />
+        ) : (
+          <NextImage src="/faces/face-03.png" alt="" fill priority sizes="448px" style={{ objectFit: "cover", objectPosition: "50% 26%" }} />
+        )}
+        <div className="absolute inset-0" style={{ background: "linear-gradient(180deg, rgba(19,25,26,.15) 0%, transparent 35%, transparent 60%, #13191a 100%)" }} />
+        <span className="absolute left-5 top-5 inline-flex items-center gap-1.5 rounded-full bg-emerald-400/20 px-3 py-1 text-[0.66rem] font-bold uppercase tracking-wide text-emerald-200 backdrop-blur-md">
+          <svg className="h-2.5 w-2.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3.5" aria-hidden><path d="M5 13l4 4L19 7" strokeLinecap="round" strokeLinejoin="round" /></svg>
+          Analyse terminée
+        </span>
+        <span className="absolute bottom-4 left-5 rounded-full bg-white/10 px-3 py-1 text-[0.74rem] font-semibold text-white backdrop-blur-md">{chipLabel}</span>
       </div>
 
-      <div className="space-y-6 p-6">
-        {/* Statut */}
-        <div className="flex items-center gap-2 text-emerald-300">
-          <svg className="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" aria-hidden><path d="M5 13l4 4L19 7" strokeLinecap="round" strokeLinejoin="round" /></svg>
-          <span className="text-[0.82rem] font-bold uppercase tracking-[0.14em]">Analyse terminée</span>
-        </div>
-
+      <div className="space-y-7 px-6 pb-7 pt-6">
         {/* Score */}
         <div>
-          <p className="text-[0.82rem] font-medium text-white/50">Score d&apos;équilibre</p>
-          <p className="font-display mt-1 text-5xl font-bold leading-none text-white">
-            <AnimatedNumber value={82} /><span className="text-2xl text-white/35"> /100</span>
+          <p className="text-[0.78rem] font-medium uppercase tracking-[0.14em] text-white/45">Score d&apos;équilibre</p>
+          <p className="font-display mt-1 text-[3.4rem] font-bold leading-none text-white">
+            <AnimatedNumber value={score} /><span className="text-2xl text-white/30"> /100</span>
           </p>
         </div>
 
-        {/* Priorité + phrase (dérivées de tes réponses) */}
+        {/* Priorité — une ligne forte, pas de pavé */}
         <div>
-          <p className="text-[0.82rem] font-medium text-white/50">Priorité détectée</p>
-          <p className="font-display mt-1 text-[1.45rem] font-bold leading-tight text-white">{priority}</p>
-          <p className="mt-2.5 text-[0.98rem] leading-relaxed text-white/65">{priorityNote}</p>
+          <p className="text-[0.78rem] font-medium uppercase tracking-[0.14em] text-white/45">Ta priorité</p>
+          <p className="font-display mt-1.5 text-[1.6rem] font-bold leading-tight text-white">{priority}</p>
         </div>
 
-        {/* Onboarding rejoué : on reprend ce que l'user a dit */}
-        {profile?.line && (
-          <div className="flex gap-2.5 rounded-2xl border border-white/[0.07] bg-white/[0.03] px-4 py-3">
-            <svg className="mt-0.5 h-4 w-4 shrink-0 text-emerald-300" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" strokeLinecap="round" strokeLinejoin="round" /></svg>
-            <p className="text-[0.9rem] leading-relaxed text-white/70">{profile.line}</p>
-          </div>
-        )}
-        {profile?.contextNote && (
-          <p className="text-[0.85rem] leading-relaxed text-amber-200/70">⚠ {profile.contextNote}</p>
-        )}
-
-        <div className="h-px w-full bg-white/[0.08]" />
-
-        {/* Zones observées */}
-        <div>
-          <h3 className="text-[1.05rem] font-semibold text-white">Zones observées</h3>
-          <div className="mt-4 space-y-3.5">
-            {zones.map((z) => (
-              <div key={z.zone} className="flex items-baseline gap-3">
-                <span className="mt-1.5 h-2 w-2 shrink-0 rounded-full" style={{ background: z.color }} />
-                <span className="w-[68px] shrink-0 text-[0.98rem] font-semibold text-white">{z.zone}</span>
-                <span className="flex-1 text-[0.98rem] text-white/55">{z.obs}</span>
-              </div>
-            ))}
-          </div>
+        {/* 2-3 observations courtes */}
+        <div className="space-y-2.5">
+          {observations.map((o) => (
+            <div key={o.label} className="flex items-center gap-3 rounded-2xl border border-white/[0.07] bg-white/[0.03] px-4 py-3">
+              <span className="h-2.5 w-2.5 shrink-0 rounded-full" style={{ background: o.color }} />
+              <span className="text-[0.98rem] font-medium text-white/85">{o.label}</span>
+            </div>
+          ))}
         </div>
 
-        <div className="h-px w-full bg-white/[0.08]" />
-
-        {/* Routine — cartes séparées */}
-        <div>
-          <h3 className="text-[1.05rem] font-semibold text-white">Routine recommandée</h3>
-          <div className="mt-4 space-y-2.5">
-            {ROUTINE.map((r) => (
-              <div key={r.n} className="flex items-center gap-3.5 rounded-2xl border border-white/[0.07] bg-white/[0.03] px-4 py-3.5">
-                <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-emerald-400/15 font-display text-sm font-bold text-emerald-300">{r.n}</span>
-                <div className="grid">
-                  <span className="text-[1rem] font-semibold text-white">{r.name}</span>
-                  <span className="text-[0.78rem] text-white/45">{r.when}</span>
-                </div>
-              </div>
-            ))}
-          </div>
+        {/* CTA fort + teaser de ce qu'il y a derrière */}
+        <div className="pt-1">
+          <Button variant="primary" size="lg" className="w-full" onClick={onSeePlan}>
+            Voir mon plan complet
+          </Button>
+          <p className="mt-3 text-center text-[0.8rem] leading-relaxed text-white/40">
+            Ta routine sur-mesure, le détail par zone et tes recommandations t&apos;attendent à l&apos;intérieur.
+          </p>
         </div>
-
-        {/* CTA — hauteur normale */}
-        <Button variant="primary" size="md" className="w-full" onClick={onSeePlan}>
-          Voir mon plan complet
-        </Button>
       </div>
     </div>
   );
