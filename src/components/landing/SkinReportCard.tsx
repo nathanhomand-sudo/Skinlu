@@ -4,6 +4,7 @@ import * as React from "react";
 import NextImage from "next/image";
 import { motion, useSpring, useTransform, useInView } from "motion/react";
 import { Button } from "@/components/ui";
+import type { SkinProfile } from "@/lib/skin-profile";
 
 /* Rapport d'analyse après scan — version skincare claire et respirable.
    Fond plus clair que le background, marges généreuses, sections bien
@@ -33,7 +34,9 @@ function AnimatedNumber({ value }: { value: number }) {
   return <motion.span ref={ref}>{display}</motion.span>;
 }
 
-export function SkinReportCard({ onSeePlan }: { onSeePlan: () => void }) {
+export function SkinReportCard({ onSeePlan, profile }: { onSeePlan: () => void; profile?: SkinProfile | null }) {
+  const priority = profile?.priority ?? "Hydratation + barrière";
+  const priorityNote = profile?.priorityNote ?? "Ta peau semble surtout demander plus de régularité sur l'hydratation.";
   return (
     <div
       className="mx-auto w-full max-w-md overflow-hidden rounded-3xl border border-white/10"
@@ -65,14 +68,23 @@ export function SkinReportCard({ onSeePlan }: { onSeePlan: () => void }) {
           </p>
         </div>
 
-        {/* Priorité + phrase */}
+        {/* Priorité + phrase (dérivées de tes réponses) */}
         <div>
           <p className="text-[0.82rem] font-medium text-white/50">Priorité détectée</p>
-          <p className="font-display mt-1 text-[1.45rem] font-bold leading-tight text-white">Hydratation + barrière</p>
-          <p className="mt-2.5 text-[0.98rem] leading-relaxed text-white/65">
-            Ta peau semble surtout demander plus de régularité sur l&apos;hydratation.
-          </p>
+          <p className="font-display mt-1 text-[1.45rem] font-bold leading-tight text-white">{priority}</p>
+          <p className="mt-2.5 text-[0.98rem] leading-relaxed text-white/65">{priorityNote}</p>
         </div>
+
+        {/* Onboarding rejoué : on reprend ce que l'user a dit */}
+        {profile?.line && (
+          <div className="flex gap-2.5 rounded-2xl border border-white/[0.07] bg-white/[0.03] px-4 py-3">
+            <svg className="mt-0.5 h-4 w-4 shrink-0 text-emerald-300" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" strokeLinecap="round" strokeLinejoin="round" /></svg>
+            <p className="text-[0.9rem] leading-relaxed text-white/70">{profile.line}</p>
+          </div>
+        )}
+        {profile?.contextNote && (
+          <p className="text-[0.85rem] leading-relaxed text-amber-200/70">⚠ {profile.contextNote}</p>
+        )}
 
         <div className="h-px w-full bg-white/[0.08]" />
 

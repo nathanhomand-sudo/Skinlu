@@ -6,6 +6,7 @@ import NextImage from "next/image";
 import { Button } from "@/components/ui";
 import { QuestionPrompt, type QuestionConfig, type QuestionAnswer } from "@/components/ui/question-prompt";
 import { isOnboarded, setOnboarded } from "@/lib/onboarding";
+import { saveProfile } from "@/lib/skin-profile";
 
 /* Briefing avant analyse — questions rendues par le composant QuestionPrompt
    (logique fournie : single/multi, badges A/B/C) restylé premium Skinlu.
@@ -64,8 +65,18 @@ export function ScanBriefing() {
     setTimeout(() => (isOnboarded() ? router.push("/v2/result") : setPhase("signup")), 1700);
   };
 
-  // Signup démo : on pose le flag puis on montre le résultat.
+  // Labels sélectionnés par question (pour personnaliser le résultat).
+  const buildLabels = () =>
+    answers.map((a, i) =>
+      (a.selectedIds ?? [])
+        .map((id) => QUESTIONS[i].options?.find((o) => o.id === id)?.label ?? "")
+        .filter(Boolean),
+    );
+
+  // Signup démo : on sauvegarde le profil (réponses → priorité), on pose le
+  // flag, puis on montre le résultat personnalisé.
   const completeSignup = () => {
+    saveProfile(buildLabels());
     setOnboarded();
     router.push("/v2/result");
   };
